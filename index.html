@@ -17,11 +17,11 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="星球碰碰首页"><span class="brand-mark">✳</span> 球球碰碰 <span class="brand-en">MEME LAB</span></a>
+    <a class="brand" href="./" aria-label="球球碰碰首页"><span class="brand-mark">✳</span> 球球碰碰 <span class="brand-en">BALL MERGE</span></a>
     <div class="header-right"><button class="icon-button" id="sound" aria-label="关闭音效" aria-pressed="true" title="关闭音效"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button></div>
   </header>
   <main>
-    <div class="skin-toolbar"><span>你的表情包，也可以长大。</span><div class="toolbar-actions"><span class="mode-label">玩法</span><button class="small-pill mode-button active" data-mode="classic">经典</button><button class="small-pill mode-button" data-mode="endless">无尽</button><button class="small-pill mode-button" data-mode="timed">60秒</button><button class="small-pill mode-button" data-mode="task">任务</button><button class="small-pill mode-button" data-mode="challenge">挑战</button><button class="small-pill mode-button" data-mode="free">轻松</button><button id="edit-skins" class="small-pill">✎ 换成长图片</button></div></div>
+    <div class="skin-toolbar"><span>你的表情包，也可以长大。</span><div class="toolbar-actions"><span class="mode-label">玩法</span><button class="small-pill mode-button active" data-mode="classic">经典</button><button class="small-pill mode-button" data-mode="endless">无尽</button><button class="small-pill mode-button" data-mode="timed">60秒</button><button class="small-pill mode-button" data-mode="task">任务</button><button class="small-pill mode-button" data-mode="challenge">挑战</button><button class="small-pill mode-button" data-mode="free">轻松</button><button id="edit-skins" class="small-pill">✎ 换成长图片</button><button id="edit-watermark" class="small-pill">水印设置</button></div></div>
     <section class="intro"><div class="eyebrow"><span></span> SMALL BALLS. BIG MERGE ENERGY.</div><h1>小小球球，<span>越碰越离谱。</span><svg class="title-star" viewBox="0 0 40 40"><path d="m20 1 4 13 13 6-13 4-4 15-5-15L1 20l14-6Z"/></svg></h1><p>从刚刚破壳，到究极大球球。你能养到第几级？</p></section>
     <div class="play-layout">
       <aside class="left-column">
@@ -45,5 +45,7 @@
   </main>
   <dialog id="skin-editor" class="skin-editor" aria-labelledby="skin-title"><div class="skin-heading"><div><p class="eyebrow">MAKE YOUR OWN EVOLUTION</p><h2 id="skin-title">从小时候，长到离谱。</h2></div><button id="close-skins" class="icon-button" aria-label="关闭图片编辑器">×</button></div><p class="skin-description">按成长顺序为 10 个等级选择图片。图片会裁成圆形，并跟着球体真实旋转。图片只保存在当前浏览器，不会上传，重新打开仍会保留。</p><div class="skin-actions"><label class="small-pill" for="skin-batch">一次导入多张图片</label><input type="file" id="skin-batch" class="sr-only" accept="image/png,image/jpeg,image/webp" multiple><button id="reset-skins" class="text-button">恢复默认外观</button></div><p class="skin-hint">批量导入按文件名排序，建议使用 01.jpg — 10.jpg。单张支持 PNG、JPG、WebP，最大 8 MB。</p><div id="skin-slots" class="skin-slots"></div><div class="skin-editor-bottom"><span id="skin-feedback" role="status">选择图片后立即生效，关闭即可继续玩。</span><button id="done-skins" class="primary">开始碰一碰 ↗</button></div></dialog>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+  <div id="watermark" class="watermark" aria-hidden="true"></div>
+  <dialog id="watermark-editor" class="watermark-editor"><h2>设置你的水印</h2><p>水印只保存在当前浏览器，可以放在页面左上角或右下角。</p><label>水印文字<input id="watermark-input" maxlength="24" placeholder="例如：Sanyoomi" /></label><label>位置<select id="watermark-position"><option value="top-left">左上角</option><option value="bottom-right">右下角</option></select></label><div><button id="watermark-save" class="primary">保存水印</button><button id="watermark-close" class="text-button">取消</button></div></dialog>
 </body>
 </html>
