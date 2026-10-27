@@ -27,6 +27,11 @@
   function toast(text) {$('toast').textContent=text;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),2600);}
   function updateDaily(){const merge=$('daily-task'),scoreNode=$('task-extra'),discover=$('task-discover');if(merge)merge.textContent=`完成 5 次合成 · ${Math.min(5,dailyMerges)} / 5`;if(scoreNode)scoreNode.textContent=`达到 500 分 · ${Math.min(500,dailyScore)} / 500`;if(discover)discover.textContent=`解锁 1 个新形态 · ${Math.min(1,dailyDiscover)} / 1`;}
   function saveDaily(){try{localStorage.setItem('planet-merge-daily',JSON.stringify({date:new Date().toISOString().slice(0,10),merges:dailyMerges,score:dailyScore,discover:dailyDiscover}));}catch{}updateDaily();}
+  const specialMeta={bomb:['✹','炸弹球','清除附近'],rainbow:['✦','彩虹球','跨级合成'],freeze:['❄','冰冻球','暂停附近'],magnet:['↯','磁铁球','吸引附近'],split:['Ⅱ','分裂球','一变二']};let unlockedTools=[];let adTarget=null;
+  try{unlockedTools=JSON.parse(localStorage.getItem('planet-merge-unlocked-tools')||'[]');}catch{unlockedTools=[];}
+  function saveUnlocked(){try{localStorage.setItem('planet-merge-unlocked-tools',JSON.stringify(unlockedTools));}catch{}}
+  function renderTools(){const root=$('special-tools');if(!root)return;root.innerHTML=Object.entries(specialMeta).map(([type,meta])=>{const unlocked=unlockedTools.includes(type),active=game?.selectedSpecial===type;return `<button class="tool-option ${unlocked?'':'locked'} ${active?'active':''}" data-tool="${type}" aria-label="${meta[1]}${unlocked?'':'，点击选择广告解锁'}"><span class="tool-icon">${meta[0]}</span><div><strong>${meta[1]}</strong><small>${unlocked?meta[2]:'看广告解锁'}</small></div></button>`;}).join('');root.querySelectorAll('[data-tool]').forEach(button=>button.onclick=()=>{const type=button.dataset.tool;if(!unlockedTools.includes(type)){adTarget=type;$('ad-status').textContent=`已选择${specialMeta[type][1]}，点击上方按钮解锁`;return;}game.chooseSpecial(game.selectedSpecial===type?null:type);renderTools();$('ad-status').textContent=game.selectedSpecial?`下一球使用${specialMeta[type][1]}`:'已取消道具';});}
+  async function watchRewarded(){if(!adTarget){adTarget=Object.keys(specialMeta).find(type=>!unlockedTools.includes(type))||Object.keys(specialMeta)[0];}const target=adTarget,button=$('watch-ad');button.disabled=true;$('ad-status').textContent='奖励广告播放中 · 请稍候';try{if(window.BallUpAds?.showRewarded)await window.BallUpAds.showRewarded();else await new Promise(resolve=>setTimeout(resolve,2200));if(!unlockedTools.includes(target))unlockedTools.push(target);saveUnlocked();game.chooseSpecial(target);renderTools();$('ad-status').textContent=`已解锁${specialMeta[target][1]}，下一球生效`;}catch{$('ad-status').textContent='广告未完成，道具没有解锁';}finally{button.disabled=false;adTarget=null;}}
   const game=new Game({
     onMerge(e){
       soundPlayer.merge(e.level);
@@ -41,10 +46,11 @@
       if(playMode==='task'&&game.merges>=5&&game.score>=500){game.ended=true;recordLeaderboard();toast('今日任务完成！');openModal('over');}
     },
     onSpecial(e){const labels={bomb:'炸弹球清场！',rainbow:'彩虹球：跨级合成！',freeze:'冰冻球：时间暂停！',magnet:'磁铁球：吸过来！',split:'分裂球：一变二！'};toast(labels[e.type]||'特殊球触发');for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,s=45+Math.random()*120;particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.85,max:.85,size:2+Math.random()*4,color:'#c99038'});}},
-    onDrop(){soundPlayer.drop();updateNext();},
+    onDrop(){soundPlayer.drop();updateNext();renderTools();},
     onEnd(){saveBest();recordLeaderboard();openModal('over');},
     onWin(){toast('究极大奶龙诞生！这局有点离谱 ✨');}
   });
+  renderTools();$('watch-ad').addEventListener('click',watchRewarded);
   lastDiscoveryCount=game.discovered.size;
   function chooseMode(next){playMode=next;game.mode=next;document.querySelectorAll('.mode-button').forEach(button=>button.classList.toggle('active',button.dataset.mode===next));const labels={timed:'60秒挑战',free:'轻松模式',endless:'无尽模式',task:'任务模式',challenge:'挑战模式',classic:'经典模式'};toast(`已切换到${labels[next]||'经典模式'}`);restart();}
   document.querySelectorAll('.mode-button').forEach(button=>button.addEventListener('click',()=>chooseMode(button.dataset.mode)));
@@ -156,7 +162,7 @@
   }
   $('share-result').addEventListener('click',async()=>{const text=`我在《奶龙碰碰》${{timed:'60秒挑战',free:'轻松模式',task:'任务模式',challenge:'挑战模式',endless:'无尽模式',classic:'经典模式'}[playMode]||'经典模式'}拿到 ${game.score} 分，连续合成 ${game.combo} 次！`;try{if(navigator.share)await navigator.share({title:'我的奶龙战绩',text});else{await navigator.clipboard.writeText(text);toast('战绩文案已复制，去分享给朋友吧');}}catch{}});
   function closeModal(){ $('overlay').hidden=true;game.paused=false;$('game-status').textContent=game.ended?'本局已结束':'奶龙营业中';$('pause').setAttribute('aria-label','暂停游戏');(previousFocus&&previousFocus!==document.body?previousFocus:canvas).focus({preventScroll:true}); }
-  function restart(){soundPlayer.stopAll();game.reset();lastDiscoveryCount=game.discovered.size;particles=[];floaters=[];$('score').textContent='0';$('combo').textContent='重开了，这把一定！';$('board-wrap').classList.remove('danger');closeModal();updateNext();updateDiscovery();lastTime=performance.now();accumulator=0;}
+  function restart(){soundPlayer.stopAll();game.reset();lastDiscoveryCount=game.discovered.size;particles=[];floaters=[];$('score').textContent='0';$('combo').textContent='重开了，这把一定！';$('board-wrap').classList.remove('danger');closeModal();updateNext();updateDiscovery();renderTools();lastTime=performance.now();accumulator=0;}
   $('modal-primary').addEventListener('click',()=>mode==='pause'?closeModal():restart());
   $('modal-secondary').addEventListener('click',()=>mode==='pause'?openModal('restart'):closeModal());
   $('pause').addEventListener('click',()=>{if(game.ended){openModal('over');return;}game.paused?closeModal():openModal('pause');});
@@ -196,7 +202,7 @@
     bottom=Math.max(SPAWN,bottom);
     ctx.save();ctx.globalAlpha=available?.85:.4;ctx.lineWidth=1;ctx.strokeStyle=boardColors['board-aim'];ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(game.aim,SPAWN+r+9);ctx.lineTo(game.aim,bottom);ctx.stroke();ctx.setLineDash([]);
     ctx.globalAlpha=.22;ctx.fillStyle=planets[game.current].color;ctx.beginPath();ctx.arc(game.aim,bottom,r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=available?.7:.35;ctx.strokeStyle=boardColors['board-aim'];ctx.stroke();ctx.restore();
-    planet(ctx,game.current,game.aim,SPAWN,r,0,available?1:.35);drawSpecial(ctx,game.currentSpecial,game.aim,SPAWN,r);
+    planet(ctx,game.current,game.aim,SPAWN,r,0,available?1:.35);drawSpecial(ctx,game.selectedSpecial||game.currentSpecial,game.aim,SPAWN,r);
     ctx.fillStyle=boardColors['board-aim'];ctx.beginPath();ctx.moveTo(game.aim-3,20);ctx.lineTo(game.aim+3,20);ctx.lineTo(game.aim,24);ctx.fill();
   }
   let lastTime=performance.now(),accumulator=0;

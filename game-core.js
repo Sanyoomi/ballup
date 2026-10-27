@@ -48,6 +48,7 @@
       this.time=0; this.score=0; this.drops=0; this.merges=0; this.ended=false; this.paused=false; this.won=false;
       this.mode=this.mode||'classic'; this.timeLeft=60000; this.challengeIndex=0;
       this.current=0; this.currentSpecial=null; this.next=this.roll(); this.nextSpecial=this.rollSpecial(); this.aim=WIDTH/2; this.readyAt=0; this.overflow=0; this.reviveCount=0;
+      this.selectedSpecial=null;
       this.lastMerge=-10000; this.combo=0; this.queue=[]; this.discovered=new Set([0]);
       Composite.add(this.engine.world,[
         Bodies.rectangle(-20,HEIGHT/2,40,HEIGHT*4,{isStatic:true,friction:.45}),
@@ -71,6 +72,7 @@
       Composite.add(this.engine.world,b); this.discovered.add(level); return b;
     }
     setAim(x) { const r=PLANETS[this.current].radius; this.aim=Math.max(r+3,Math.min(WIDTH-r-3,x)); }
+    chooseSpecial(type) { this.selectedSpecial=type||null; return this.selectedSpecial; }
     revive() {
       if(!this.ended||this.reviveCount>=1) return false;
       for(const b of this.balls) if(b.position.y-b.circleRadius<LIMIT+140) Composite.remove(this.engine.world,b);
@@ -80,7 +82,7 @@
     }
     drop() {
       if(this.paused||this.ended||this.time<this.readyAt) return false;
-      const ball=this.add(this.current,this.aim,SPAWN,{x:0,y:.8},0,this.currentSpecial);
+      const special=this.selectedSpecial||this.currentSpecial;const ball=this.add(this.current,this.aim,SPAWN,{x:0,y:.8},0,special);this.selectedSpecial=null;
       this.drops++; this.current=this.next; this.currentSpecial=this.nextSpecial; this.next=this.roll(); this.nextSpecial=this.rollSpecial(); this.setAim(this.aim); this.readyAt=this.time+440;
       this.onDrop(ball); return true;
     }
