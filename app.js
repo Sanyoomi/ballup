@@ -38,7 +38,7 @@
       const reactions=['刚出生就开始碰瓷','乖巧，但只有一点','笑得有点太早了','先干饭，再说别的','大脑正在加载中…','哭了，但还是要长大','这表情逐渐不对劲','已经开始膨胀了','小龙得志，拿捏了','究极大奶龙，登场！'];
       $('combo').textContent=e.combo>1?`${e.combo} 连合成 · 越来越离谱！`:reactions[e.level];
       $('announcer').textContent=`合成${planets[e.level].name}，获得${e.points}分，总分${game.score}分`;
-      if(playMode==='task'&&game.merges>=5&&game.score>=500){game.ended=true;toast('今日任务完成！');openModal('over');}
+      if(playMode==='task'&&game.merges>=5&&game.score>=500){game.ended=true;recordLeaderboard();toast('今日任务完成！');openModal('over');}
     },
     onSpecial(e){const labels={bomb:'炸弹球清场！',rainbow:'彩虹球：跨级合成！',freeze:'冰冻球：时间暂停！',magnet:'磁铁球：吸过来！',split:'分裂球：一变二！'};toast(labels[e.type]||'特殊球触发');for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,s=45+Math.random()*120;particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.85,max:.85,size:2+Math.random()*4,color:'#c99038'});}},
     onDrop(){soundPlayer.drop();updateNext();},
