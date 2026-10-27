@@ -195,7 +195,7 @@
   function drawBackground(){
     ctx.clearRect(0,0,W,H);ctx.fillStyle=boardColors.board;ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#9c968431';for(let x=18;x<W;x+=22)for(let y=17;y<H;y+=22){ctx.beginPath();ctx.arc(x,y,.7,0,Math.PI*2);ctx.fill();}
-    ctx.strokeStyle=game.overflow?'#a94f3a':boardColors['board-line'];ctx.lineWidth=1.3;ctx.setLineDash([5,6]);ctx.beginPath();ctx.moveTo(14,LIMIT);ctx.lineTo(W-14,LIMIT);ctx.stroke();ctx.setLineDash([]);
+    if(!['free','endless'].includes(playMode)){ctx.strokeStyle=game.overflow?'#a94f3a':boardColors['board-line'];ctx.lineWidth=1.3;ctx.setLineDash([5,6]);ctx.beginPath();ctx.moveTo(14,LIMIT);ctx.lineTo(W-14,LIMIT);ctx.stroke();ctx.setLineDash([]);}
     ctx.fillStyle=boardColors['board-floor'];ctx.fillRect(0,FLOOR,W,H-FLOOR);ctx.strokeStyle=boardColors['board-floor-line'];ctx.beginPath();ctx.moveTo(0,FLOOR);ctx.lineTo(W,FLOOR);ctx.stroke();
     if(game.balls.length<12){ctx.save();ctx.textAlign='center';ctx.fillStyle=boardColors['board-note'];ctx.font='11px "Segoe UI",sans-serif';ctx.fillText('地方小了，球球可没变小。',W/2,H*.54);ctx.font='9px "Segoe UI",sans-serif';ctx.fillText('LESS SPACE. MORE BALL.',W/2,H*.585);ctx.restore();}
   }
@@ -213,7 +213,7 @@
   function frame(now){
     const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;
     if(!game.paused&&!game.ended){accumulator+=dt*1000;let count=0;while(accumulator>=1000/120&&count++<8){game.step();accumulator-=1000/120;}if(game.paused||game.ended)accumulator=0;}else accumulator=0;
-    drawBackground();drawAim();
+    const safeMode=['free','endless'].includes(playMode);$('board-wrap').classList.toggle('safe',safeMode);$('limit-label').hidden=safeMode;drawBackground();drawAim();
     for(const b of game.balls){const age=game.time-b.born;const scale=age<180?.78+.22*Math.min(1,age/180):1;planet(ctx,b.level,b.position.x,b.position.y,b.circleRadius*scale,b.angle);drawSpecial(ctx,b.special,b.position.x,b.position.y,b.circleRadius*scale,b.angle);}
     if(!game.paused){
       for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=110*dt;}
