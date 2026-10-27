@@ -15,7 +15,7 @@
   const textures=new Array(10), originalNames=planets.map(p=>p.name), customVersions=new Array(10).fill(0);
   const stageNames=['刚破壳','乖乖球','傻乐球','干饭球','发呆球','爆哭球','逐渐离谱','开始膨胀','小球得志','究极大球'];
   stageNames.forEach((name,i)=>planets[i].name=name);
-  let best=0,sound=true,particles=[],floaters=[],toastTimer,mode='pause',previousFocus=null,playMode='classic',dailyMerges=0,dailyScore=0,dailyDiscover=0,lastDiscoveryCount=0;
+  let best=0,sound=true,particles=[],specialEffects=[],floaters=[],toastTimer,mode='pause',previousFocus=null,playMode='classic',dailyMerges=0,dailyScore=0,dailyDiscover=0,lastDiscoveryCount=0;
   try { const savedDaily=JSON.parse(localStorage.getItem('planet-merge-daily')||'{}'); const today=new Date().toISOString().slice(0,10); if(savedDaily.date===today){dailyMerges=savedDaily.merges||0;dailyScore=savedDaily.score||0;dailyDiscover=savedDaily.discover||0;} else localStorage.setItem('planet-merge-daily',JSON.stringify({date:today,merges:0,score:0,discover:0})); } catch{}
   try {best=Number(localStorage.getItem('planet-merge-best'))||0;const saved=localStorage.getItem('planet-merge-sound');if(saved!==null)sound=saved==='true';}catch{}
   const soundPlayer=new MemeAudio.SoundEngine({assets:window.MemeSounds,enabled:sound,onUnavailable:()=>toast('大笑音效暂不可用，已改用弹跳音效')});
@@ -45,7 +45,7 @@
       $('announcer').textContent=`合成${planets[e.level].name}，获得${e.points}分，总分${game.score}分`;
       if(playMode==='task'&&game.merges>=5&&game.score>=500){game.ended=true;recordLeaderboard();toast('今日任务完成！');openModal('over');}
     },
-    onSpecial(e){const labels={bomb:'炸弹球清场！',rainbow:'彩虹球：跨级合成！',freeze:'冰冻球：时间暂停！',magnet:'磁铁球：吸过来！',split:'分裂球：一变二！'};toast(labels[e.type]||'特殊球触发');for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,s=45+Math.random()*120;particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.85,max:.85,size:2+Math.random()*4,color:'#c99038'});}},
+    onSpecial(e){const labels={bomb:'炸弹球清场！',rainbow:'彩虹球：跨级合成！',freeze:'冰冻球：时间暂停！',magnet:'磁铁球：吸过来！',split:'分裂球：一变二！'};toast(labels[e.type]||'特殊球触发');specialEffects.push({type:e.type,x:e.x,y:e.y,life:1});const effectColors={bomb:'#d86b4d',rainbow:'#c99038',freeze:'#6ea6b4',magnet:'#7d8fca',split:'#ae7a49'};for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,s=45+Math.random()*120;particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.85,max:.85,size:2+Math.random()*4,color:effectColors[e.type]||'#c99038'});}},
     onDrop(ball){soundPlayer.drop();if(ball?.special&&toolInventory[ball.special]>0){toolInventory[ball.special]--;saveInventory();$('ad-status').textContent=`${specialMeta[ball.special][1]}已使用 1 个`; }updateNext();renderTools();},
     onEnd(){saveBest();recordLeaderboard();openModal('over');},
     onWin(){toast('究极大球球诞生！这局有点离谱 ✨');}
@@ -91,6 +91,7 @@
     c.restore();
   }
   function drawSpecial(c,special,x,y,r){if(!special)return;const icons={bomb:'✹',rainbow:'✦',freeze:'❄',magnet:'↯',split:'Ⅱ'};c.save();c.translate(x+r*.45,y-r*.45);c.fillStyle='#fffdf0';c.strokeStyle='#78603a';c.lineWidth=Math.max(1,r*.035);c.beginPath();c.arc(0,0,Math.max(7,r*.25),0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#78603a';c.font=`700 ${Math.max(9,r*.25)}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(icons[special]||'✦',0,1);c.restore();}
+  function drawSpecialEffect(c,e){const t=e.life,x=e.x,y=e.y;c.save();c.globalAlpha=Math.max(0,t);c.translate(x,y);if(e.type==='bomb'){c.strokeStyle='#d86b4d';c.lineWidth=3;for(let i=0;i<2;i++){c.beginPath();c.arc(0,0,(1-t)*92+i*9,0,Math.PI*2);c.stroke();}c.fillStyle='#d86b4d';for(let i=0;i<10;i++){const a=i*Math.PI/5;c.beginPath();c.moveTo(Math.cos(a)*18,Math.sin(a)*18);c.lineTo(Math.cos(a)*(42+(1-t)*35),Math.sin(a)*(42+(1-t)*35));c.stroke();}}else if(e.type==='rainbow'){const colors=['#e97878','#e6a14b','#d5be58','#7eaa76','#6ea6b4','#858fc1'];c.lineWidth=4;colors.forEach((color,i)=>{c.strokeStyle=color;c.beginPath();c.arc(0,0,(1-t)*70+i*5,Math.PI*1.08,Math.PI*1.92);c.stroke();});}else if(e.type==='freeze'){c.strokeStyle='#6ea6b4';c.lineWidth=2;c.beginPath();c.arc(0,0,20+(1-t)*62,0,Math.PI*2);c.stroke();c.fillStyle='#d8f1ef';for(let i=0;i<8;i++){const a=i*Math.PI/4,r=18+(1-t)*55;c.save();c.rotate(a);c.beginPath();c.moveTo(0,-r);c.lineTo(5,-r+10);c.lineTo(0,-r+18);c.lineTo(-5,-r+10);c.fill();c.restore();}}else if(e.type==='magnet'){c.strokeStyle='#7d8fca';c.lineWidth=2;for(let i=0;i<4;i++){c.beginPath();c.arc(0,0,20+i*12,Math.PI*.2,Math.PI*.8);c.stroke();}c.fillStyle='#7d8fca';c.beginPath();c.arc(-28,0,4,0,Math.PI*2);c.arc(28,0,4,0,Math.PI*2);c.fill();}else if(e.type==='split'){c.strokeStyle='#ae7a49';c.lineWidth=3;c.beginPath();c.moveTo(0,0);c.lineTo(-(1-t)*72,-(1-t)*45);c.moveTo(0,0);c.lineTo((1-t)*72,-(1-t)*45);c.stroke();c.fillStyle='#e8c47f';c.beginPath();c.arc(-(1-t)*72,-(1-t)*45,8,0,Math.PI*2);c.arc((1-t)*72,-(1-t)*45,8,0,Math.PI*2);c.fill();}c.restore();}
   const thumbCanvases=[];
   planets.forEach((p,i)=>{
     const item=document.createElement('div');item.className='planet-item';item.title=`${p.name} · 第${i+1}级`;
@@ -162,7 +163,7 @@
   }
   $('share-result').addEventListener('click',async()=>{const text=`我在《球球碰碰》${{timed:'60秒挑战',free:'轻松模式',task:'任务模式',challenge:'挑战模式',endless:'无尽模式',classic:'经典模式'}[playMode]||'经典模式'}拿到 ${game.score} 分，连续合成 ${game.combo} 次！`;try{if(navigator.share)await navigator.share({title:'我的球球战绩',text});else{await navigator.clipboard.writeText(text);toast('战绩文案已复制，去分享给朋友吧');}}catch{}});
   function closeModal(){ $('overlay').hidden=true;game.paused=false;$('game-status').textContent=game.ended?'本局已结束':'球球营业中';$('pause').setAttribute('aria-label','暂停游戏');(previousFocus&&previousFocus!==document.body?previousFocus:canvas).focus({preventScroll:true}); }
-  function restart(){soundPlayer.stopAll();game.reset();lastDiscoveryCount=game.discovered.size;particles=[];floaters=[];$('score').textContent='0';$('combo').textContent='重开了，这把一定！';$('board-wrap').classList.remove('danger');closeModal();updateNext();updateDiscovery();renderTools();lastTime=performance.now();accumulator=0;}
+  function restart(){soundPlayer.stopAll();game.reset();lastDiscoveryCount=game.discovered.size;particles=[];specialEffects=[];floaters=[];$('score').textContent='0';$('combo').textContent='重开了，这把一定！';$('board-wrap').classList.remove('danger');closeModal();updateNext();updateDiscovery();renderTools();lastTime=performance.now();accumulator=0;}
   $('modal-primary').addEventListener('click',()=>mode==='pause'?closeModal():restart());
   $('modal-secondary').addEventListener('click',()=>mode==='pause'?openModal('restart'):closeModal());
   $('pause').addEventListener('click',()=>{if(game.ended){openModal('over');return;}game.paused?closeModal():openModal('pause');});
@@ -214,8 +215,11 @@
     if(!game.paused){
       for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=110*dt;}
       for(const f of floaters){f.life-=dt;f.y-=30*dt;}
+      for(const e of specialEffects)e.life-=dt*1.35;
       particles=particles.filter(p=>p.life>0);floaters=floaters.filter(f=>f.life>0);
+      specialEffects=specialEffects.filter(e=>e.life>0);
     }
+    for(const e of specialEffects)drawSpecialEffect(ctx,e);
     for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life/p.max,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
     for(const f of floaters){ctx.globalAlpha=Math.min(1,f.life*2);ctx.font='600 18px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle='#527340';ctx.fillText(f.text,f.x,f.y);}ctx.globalAlpha=1;
     $('board-wrap').classList.toggle('danger',game.overflow>100);
