@@ -34,7 +34,6 @@ function setupCustomizer() {
   try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (saved) applySaved(saved); } catch (_) {}
   renderCustomizer();
   document.querySelector('#save-preset').onclick = () => { persist(); const blob = new Blob([JSON.stringify(custom)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ballup-preset.json'; a.click(); URL.revokeObjectURL(a.href); setStatus('预设已下载 ✓'); };
-  document.querySelector('#load-preset').onclick = () => document.querySelector('#preset-file').click();
   document.querySelector('#preset-file').onchange = e => readFile(e.target.files[0], file => { try { applySaved(JSON.parse(atob(file.data.split(',')[1]))); persist(); setStatus('预设已加载 ✓'); } catch (_) { setStatus('预设文件无法读取'); } });
   document.querySelector('#reset-preset').onclick = () => { custom.forEach(x => Object.assign(x, { image: '', audio: '', imageName: '', audioName: '' })); persist(); renderCustomizer(); };
 }

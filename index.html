@@ -25,8 +25,7 @@
         <div class="panel-heading"><div><p class="eyebrow">MY BALLS</p><h2>DIY 球球实验室</h2></div><span id="save-status">设置会自动保存在本机</span></div>
         <p class="panel-copy">给每个等级放一张照片和一段声音。照片与音效只保存在当前浏览器中，不会上传。</p>
         <div id="customizer" class="customizer"></div>
-        <div class="preset-actions"><button id="save-preset">保存当前预设</button><button id="load-preset" class="secondary">加载预设</button><button id="reset-preset" class="ghost">恢复默认</button></div>
-        <input id="preset-file" type="file" accept="application/json" hidden />
+        <div class="preset-actions"><button id="save-preset">保存预设</button><label class="upload-preset" for="preset-file">上传预设文件<input id="preset-file" type="file" accept="application/json,.json" /></label><button id="reset-preset" class="ghost">恢复默认</button></div>
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
