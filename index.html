@@ -1,38 +1,48 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ball Up</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <main class="game-shell">
-      <header>
-        <div>
-          <p class="eyebrow">BALL UP · MERGE LAB</p>
-          <h1>合成小球</h1>
-          <p class="hint">左右拖拽瞄准，松开投放。相同大小的小球碰撞后会合成为更大的球。</p>
-        </div>
-        <div class="stats"><span>分数 <strong id="score">0</strong></span><button id="restart">重新开始</button></div>
-      </header>
-      <nav class="mode-bar" aria-label="游戏模式"><span>模式</span><button class="mode active" data-mode="classic">经典</button><button class="mode" data-mode="timed">60秒挑战</button><button class="mode" data-mode="free">轻松模式</button><span class="timer" id="timer">∞</span><label class="world-select">世界<select id="world-theme"><option value="candy">糖果</option><option value="space">太空</option><option value="ocean">海洋</option><option value="dino">恐龙</option><option value="campus">校园</option><option value="festival">节日</option></select></label></nav>
-      <section class="board-wrap">
-        <canvas id="game" aria-label="合成小球游戏区域"></canvas>
-        <div id="game-over" class="game-over hidden"><h2>本局完成</h2><p id="result-copy">球球还在期待下一次合成</p><div class="result-card"><span>本局分数 <b id="result-score">0</b></span><span>最高合成 <b id="result-level">草莓球</b></span><span>最佳连击 <b id="result-combo">0</b></span></div><div class="result-actions"><button id="restart-overlay">再来一局</button><button id="share-result" class="secondary">分享战绩</button></div></div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ddd8ce">
+  <meta name="description" content="从破壳到究极大奶龙，合成越大，表情越离谱。奶龙表情合成本地试玩原型。">
+  <title>奶龙碰碰 v0.9 · 紧凑挑战版</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+  <script defer src="game-core.js"></script>
+  <script defer src="skin-data.js"></script>
+  <script defer src="audio-data.js"></script>
+  <script defer src="audio-engine.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="星球碰碰首页"><span class="brand-mark">✳</span> 奶龙碰碰 <span class="brand-en">MEME LAB</span></a>
+    <div class="header-right"><span class="version"><i></i> 紧凑挑战版 v0.9</span><button class="icon-button" id="sound" aria-label="关闭音效" aria-pressed="true" title="关闭音效"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button></div>
+  </header>
+  <main>
+    <div class="skin-toolbar"><span>你的表情包，也可以长大。</span><div class="toolbar-actions"><span class="mode-label">玩法</span><button class="small-pill mode-button active" data-mode="classic">经典</button><button class="small-pill mode-button" data-mode="timed">60秒</button><button class="small-pill mode-button" data-mode="free">轻松</button><button id="edit-skins" class="small-pill">✎ 替换成长图片</button></div></div>
+    <section class="intro"><div class="eyebrow"><span></span> SMALL DRAGON. BIG MEME ENERGY.</div><h1>小小奶龙，<span>越碰越离谱。</span><svg class="title-star" viewBox="0 0 40 40"><path d="m20 1 4 13 13 6-13 4-4 15-5-15L1 20l14-6Z"/></svg></h1><p>从刚刚破壳，到究极大奶龙。你能养到第几级？</p></section>
+    <div class="play-layout">
+      <aside class="left-column">
+        <section class="score-card"><div class="card-label">本次得分 <span>↗</span></div><div id="score" class="score-value">0</div><div class="best"><svg viewBox="0 0 24 24"><path d="M8 4h8v7a4 4 0 0 1-8 0V4Zm0 2H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 2v5m-4 0h8"/></svg> 个人最佳 <strong id="best">0</strong></div></section>
+        <section class="howto"><div class="section-label">先碰一个，问题不大 <span>↙</span></div><div class="instruction"><span class="step">01</span><div><strong>左右移动</strong><p>在游戏区域拖动，选择落点</p></div></div><div class="instruction"><span class="step">02</span><div><strong>相同表情，碰一起</strong><p>两只同级奶龙，合成更大一只</p></div></div><div class="instruction"><span class="step">03</span><div><strong>离谱，也要留点空间</strong><p>别让奶龙堆过上方虚线</p></div></div><div class="keyboard"><kbd>←</kbd><kbd>→</kbd> 移动 <span>·</span> <kbd>空格</kbd> 释放</div></section>
+        <div class="little-note"><svg viewBox="0 0 48 48"><path d="M24 4v9m0 22v9M4 24h9m22 0h9M10 10l7 7m14 14 7 7m0-28-7 7M17 31l-7 7"/></svg><p>每一次碰撞，<br>都有新的可能。</p></div>
+      </aside>
+      <section class="game-column" aria-label="奶龙合成游戏">
+        <div class="board-top"><span><i></i> <span id="game-status">宇宙运行中</span></span><span id="combo" aria-live="polite">准备好，发射！</span><span id="mode-timer" class="mode-timer">∞</span></div>
+        <div class="board-wrap" id="board-wrap"><canvas id="game" width="360" height="500" tabindex="0" role="application" aria-label="奶龙合成游戏区域。左右拖动后松手释放，或使用左右方向键移动、空格释放，P键暂停。"></canvas><span class="limit-label">保持在这条线下方</span><div id="toast" class="toast" role="status"></div><div class="overlay" id="overlay" hidden><div class="modal"><div class="modal-orbit">✳</div><p id="modal-eyebrow" class="eyebrow">TAKE A LITTLE BREAK</p><h2 id="modal-title">奶龙也要歇会儿</h2><p id="modal-description">歇够了，继续碰一碰。</p><button id="modal-primary" class="primary">继续碰一碰 <span>↗</span></button><button id="modal-secondary" class="text-button">重新开始</button></div></div></div>
+        <div class="board-bottom"><span><svg viewBox="0 0 24 24"><path d="m9 4 6 0m-3 0v12m-5-5 5 5 5-5M5 20h14"/></svg> 拖动瞄准 · 松手释放</span><div><button class="small-button" id="pause" aria-label="暂停游戏" title="暂停 / P"><svg viewBox="0 0 24 24"><path d="M8 5v14m8-14v14"/></svg></button><button class="small-button" id="restart" aria-label="重新开始" title="重新开始"><svg viewBox="0 0 24 24"><path d="M4 11a8 8 0 1 1 2 7M4 4v7h7"/></svg></button></div></div>
       </section>
-      <div class="game-info"><span><b id="combo">0</b> COMBO</span><span>最高分 <b id="best-score">0</b></span><span>已发现 <b id="discovered">1/7</b></span></div>
-      <p class="legend"><span class="dot"></span>危险线　 <span class="key">鼠标 / 触摸</span> 拖拽投放</p>
-      <section class="progress-grid"><div class="collection-card"><div class="section-title"><h2>球球图鉴</h2><span>合成解锁</span></div><div id="collection" class="collection"></div></div><div class="task-card"><div class="section-title"><h2>今日任务</h2><span id="task-date"></span></div><div id="tasks"></div></div></section>
-      <section class="creator-panel">
-        <div class="panel-heading"><div><p class="eyebrow">MY BALLS</p><h2>DIY 球球实验室</h2></div><span id="save-status">设置会自动保存在本机</span></div>
-        <p class="panel-copy">每个等级都有颜色提示。点击卡片里的大按钮更换照片或音效；内容只保存在当前浏览器中，不会上传。</p>
-        <div class="theme-row"><span>快速参考预设</span><button class="theme-button dragon" data-theme="dragon">奶龙风</button><button class="theme-button court" data-theme="court">篮球梗风</button></div>
-        <div id="customizer" class="customizer"></div>
-        <div class="preset-actions"><button id="save-preset">保存预设</button><label class="upload-preset" for="preset-file">上传预设文件<input id="preset-file" type="file" accept="application/json,.json" /></label><button id="reset-preset" class="ghost">恢复默认</button></div>
-      </section>
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
-    <script src="game.js"></script>
-  </body>
+      <aside class="right-column">
+        <section class="next-card"><div class="section-label">下一只奶龙 <span>NEXT UP</span></div><div class="next-preview"><canvas id="next" width="120" height="100" aria-label="下一个奶龙预览"></canvas><div><strong id="next-name">刚破壳</strong><span id="next-level">LEVEL 01</span></div></div><div class="next-note"><span>✧</span> 它来了，它又来了</div></section>
+        <section class="evolution"><div class="section-label">奶龙成长图鉴 <span>01—10</span></div><p class="section-description">破壳 → 表情进化 → 究极大奶龙</p><div class="evolution-grid" id="evolution"></div><div class="evolution-footer"><span class="legend-dot"></span> <span id="discovered">已发现 3 / 10 种形态</span></div></section>
+        <div class="tip"><span>✦</span><div><strong>今日小任务</strong><p id="daily-task">完成 5 次合成 · 0 / 5</p><p id="task-extra">达到 500 分 · 0 / 500</p></div></div>
+      </aside>
+    </div>
+    <footer><span>非官方本地试玩 · MADE FOR JOY</span><span class="footer-center">越碰越大，越来越离谱 <span>✳</span></span><span>MEME MERGE · v0.9</span></footer>
+  </main>
+  <dialog id="skin-editor" class="skin-editor" aria-labelledby="skin-title"><div class="skin-heading"><div><p class="eyebrow">MAKE YOUR OWN EVOLUTION</p><h2 id="skin-title">从小时候，长到离谱。</h2></div><button id="close-skins" class="icon-button" aria-label="关闭图片编辑器">×</button></div><p class="skin-description">按成长顺序为 10 个等级选择图片。图片会裁成圆形，并跟着球体真实旋转。仅在本次浏览器会话中使用，不会上传。</p><div class="skin-actions"><label class="small-pill" for="skin-batch">一次导入多张图片</label><input type="file" id="skin-batch" class="sr-only" accept="image/png,image/jpeg,image/webp" multiple><button id="reset-skins" class="text-button">恢复默认外观</button></div><p class="skin-hint">批量导入按文件名排序，建议使用 01.jpg — 10.jpg。单张支持 PNG、JPG、WebP，最大 8 MB。</p><div id="skin-slots" class="skin-slots"></div><div class="skin-editor-bottom"><span id="skin-feedback" role="status">选择图片后立即生效，关闭即可继续玩。</span><button id="done-skins" class="primary">开始碰一碰 ↗</button></div></dialog>
+  <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+</body>
 </html>

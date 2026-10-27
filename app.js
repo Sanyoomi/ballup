@@ -1,0 +1,211 @@
+/* Canvas artwork is drawn locally; the game needs no network requests. */
+(() => {
+  'use strict';
+  const $=id=>document.getElementById(id);
+  if(!window.PlanetGame) { $('game-status').textContent='加载失败';$('toast').textContent='物理引擎未加载，请刷新页面';$('toast').classList.add('visible');return; }
+  const {Game,PLANETS:planets,WIDTH:W,HEIGHT:H,FLOOR,LIMIT,SPAWN}=PlanetGame;
+  const canvas=$('game'), ctx=canvas.getContext('2d');
+  $('board-wrap').style.aspectRatio=`${W} / ${H}`;
+  document.documentElement.style.setProperty('--danger-position',`${LIMIT/H*100}%`);
+  const style=getComputedStyle(document.documentElement);
+  const boardColors=Object.fromEntries(['board','board-line','board-floor','board-floor-line','board-note','board-aim'].map(name=>[name,style.getPropertyValue('--'+name).trim()]));
+  const skinConfig=window.MemeSkins||{levels:[],sources:{}};
+  const textures=new Array(10), originalNames=planets.map(p=>p.name), customVersions=new Array(10).fill(0);
+  const stageNames=skinConfig.levels.map(s=>s.name);
+  stageNames.forEach((name,i)=>planets[i].name=name);
+  let best=0,sound=true,particles=[],floaters=[],toastTimer,mode='pause',previousFocus=null,playMode='classic',dailyMerges=0,dailyScore=0;
+  try { const savedDaily=JSON.parse(localStorage.getItem('planet-merge-daily')||'{}'); const today=new Date().toISOString().slice(0,10); if(savedDaily.date===today){dailyMerges=savedDaily.merges||0;dailyScore=savedDaily.score||0;} else localStorage.setItem('planet-merge-daily',JSON.stringify({date:today,merges:0,score:0})); } catch{}
+  try {best=Number(localStorage.getItem('planet-merge-best'))||0;const saved=localStorage.getItem('planet-merge-sound');if(saved!==null)sound=saved==='true';}catch{}
+  const soundPlayer=new MemeAudio.SoundEngine({assets:window.MemeSounds,enabled:sound,onUnavailable:()=>toast('大笑音效暂不可用，已改用弹跳音效')});
+  soundPlayer.preload();
+  $('best').textContent=best.toLocaleString();
+  function saveBest() {if(game.score>best){best=game.score;$('best').textContent=best.toLocaleString();try{localStorage.setItem('planet-merge-best',best);}catch{}}}
+  function toast(text) {$('toast').textContent=text;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),2600);}
+  function updateDaily(){const merge=$('daily-task'),scoreNode=$('task-extra');if(merge)merge.textContent=`完成 5 次合成 · ${Math.min(5,dailyMerges)} / 5`;if(scoreNode)scoreNode.textContent=`达到 500 分 · ${Math.min(500,dailyScore)} / 500`;}
+  function saveDaily(){try{localStorage.setItem('planet-merge-daily',JSON.stringify({date:new Date().toISOString().slice(0,10),merges:dailyMerges,score:dailyScore}));}catch{}updateDaily();}
+  const game=new Game({
+    onMerge(e){
+      soundPlayer.merge(e.level);
+      dailyMerges++;dailyScore+=e.points;saveDaily();
+      const color=planets[e.level].color;
+      for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,s=30+Math.random()*90;particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.7,max:.7,size:2+Math.random()*3,color});}
+      floaters.push({x:e.x,y:e.y,text:'+'+e.points,life:1,max:1});
+      $('score').textContent=game.score.toLocaleString();saveBest();updateDiscovery();
+      const reactions=['刚出生就开始碰瓷','乖巧，但只有一点','笑得有点太早了','先干饭，再说别的','大脑正在加载中…','哭了，但还是要长大','这表情逐渐不对劲','已经开始膨胀了','小龙得志，拿捏了','究极大奶龙，登场！'];
+      $('combo').textContent=e.combo>1?`${e.combo} 连合成 · 越来越离谱！`:reactions[e.level];
+      $('announcer').textContent=`合成${planets[e.level].name}，获得${e.points}分，总分${game.score}分`;
+    },
+    onDrop(){soundPlayer.drop();updateNext();},
+    onEnd(){saveBest();openModal('over');},
+    onWin(){toast('究极大奶龙诞生！这局有点离谱 ✨');}
+  });
+  function chooseMode(next){playMode=next;game.mode=next;document.querySelectorAll('.mode-button').forEach(button=>button.classList.toggle('active',button.dataset.mode===next));const label=next==='timed'?'60秒挑战':next==='free'?'轻松模式':'经典模式';toast(`已切换到${label}`);restart();}
+  document.querySelectorAll('.mode-button').forEach(button=>button.addEventListener('click',()=>chooseMode(button.dataset.mode)));
+  // Draw planets with surface markings, faces and light; rotation follows the body.
+  function planet(c,level,x,y,r,angle=0,alpha=1,time=0) {
+    const p=planets[level];
+    c.save();c.globalAlpha=alpha;c.translate(x,y);
+    c.fillStyle='#52644413';c.beginPath();c.ellipse(1,r*.89,r*.8,r*.16,0,0,Math.PI*2);c.fill();
+    c.rotate(angle);
+    const texture=textures[level];
+    if(texture&&texture.image.complete) {
+      c.save();c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.clip();c.fillStyle='#fff5c9';c.fillRect(-r,-r,r*2,r*2);
+      const image=texture.image,crop=texture.crop||[0,0,image.naturalWidth,image.naturalHeight];
+      const [sx,sy,sw,sh]=crop,side=Math.min(sw,sh);
+      c.drawImage(image,sx+(sw-side)/2,sy+(sh-side)/2,side,side,-r,-r,r*2,r*2);
+      const light=c.createLinearGradient(-r,-r,r,r);light.addColorStop(0,'#ffffff18');light.addColorStop(.6,'#ffffff00');light.addColorStop(1,'#80501326');
+      c.fillStyle=light;c.fillRect(-r,-r,r*2,r*2);c.restore();
+      c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.lineWidth=Math.max(1.4,r*.025);c.strokeStyle=['#e9c675','#e9b974','#e2a861','#df9555','#d98c50','#dd8d65','#cc8056','#c9723e','#c56631','#ab4b27'][level];c.stroke();c.restore();return;
+    }
+    if(level===9){c.save();c.strokeStyle='#e7c37b66';c.lineWidth=2;for(let i=0;i<12;i++){const a=i*Math.PI/6;c.beginPath();c.moveTo(Math.cos(a)*r*1.06,Math.sin(a)*r*1.06);c.lineTo(Math.cos(a)*r*1.16,Math.sin(a)*r*1.16);c.stroke();}c.restore();}
+    const grad=c.createRadialGradient(-r*.35,-r*.45,r*.08,r*.15,r*.2,r*1.25);grad.addColorStop(0,p.light);grad.addColorStop(.65,p.color);grad.addColorStop(1,p.dark);
+    c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.fillStyle=grad;c.fill();c.strokeStyle=p.dark+'55';c.lineWidth=1;c.stroke();
+    c.save();c.beginPath();c.arc(0,0,r-1,0,Math.PI*2);c.clip();
+    c.globalAlpha=alpha*.22;c.fillStyle=p.dark;
+    if(level===0){[[-.47,-.22,.19],[.35,.4,.16],[.42,-.45,.11],[-.3,.52,.09]].forEach(([a,b,s])=>{c.beginPath();c.arc(a*r,b*r,s*r,0,Math.PI*2);c.fill();});}
+    else if([3,5,7,8].includes(level)) {
+      c.rotate(-.32);c.lineWidth=r*.19;c.strokeStyle=p.light;
+      for(let i=-2;i<=2;i++){c.beginPath();c.ellipse(0,i*r*.48,r*1.3,r*.29,0,0,Math.PI);c.stroke();}
+    }else{for(let i=0;i<8;i++){const a=i*2.399+level;c.beginPath();c.ellipse(Math.cos(a)*r*.65,Math.sin(a)*r*.65,r*(.08+(i%3)*.03),r*.075,a,0,Math.PI*2);c.fill();}}
+    c.restore();
+    if(level===8){c.save();c.rotate(-.36);c.strokeStyle='#ac925dc0';c.lineWidth=r*.1;c.beginPath();c.ellipse(0,0,r*1.03,r*.31,0,0,Math.PI);c.stroke();c.strokeStyle='#f5e2b0';c.lineWidth=r*.03;c.stroke();c.restore();}
+    c.fillStyle='#fff';c.globalAlpha=alpha*.25;c.beginPath();c.ellipse(-r*.32,-r*.48,r*.27,r*.11,-.5,0,Math.PI*2);c.fill();c.globalAlpha=alpha;
+    // Quiet, friendly faces make the ball's physical rotation visible.
+    c.fillStyle='#43503f';const eye=Math.max(1.4,r*.043),ey=-r*.035;
+    [-1,1].forEach(sign=>{c.beginPath();c.ellipse(sign*r*.2,ey,eye,eye*1.3,0,0,Math.PI*2);c.fill();});
+    c.strokeStyle='#526044';c.lineWidth=Math.max(1,r*.025);c.beginPath();c.arc(0,r*.09,r*.095,.12,Math.PI-.12);c.stroke();
+    c.fillStyle='#ce7f7b';c.globalAlpha=alpha*.25;[-1,1].forEach(sign=>{c.beginPath();c.ellipse(sign*r*.34,r*.1,r*.09,r*.045,0,0,Math.PI*2);c.fill();});
+    c.restore();
+  }
+  const thumbCanvases=[];
+  planets.forEach((p,i)=>{
+    const item=document.createElement('div');item.className='planet-item';item.title=`${p.name} · 第${i+1}级`;
+    const mini=document.createElement('canvas');mini.width=104;mini.height=96;mini.setAttribute('aria-label',p.name);
+    const label=document.createElement('span');label.textContent=p.name;item.append(mini,label);$('evolution').append(item);thumbCanvases.push({item,canvas:mini});
+    const size=20+i*.9;planet(mini.getContext('2d'),i,52,45,size,0);
+  });
+  function repaintThumbs(){thumbCanvases.forEach((p,i)=>{const c=p.canvas.getContext('2d');c.clearRect(0,0,104,96);planet(c,i,52,45,20+i*.9);p.item.querySelector('span').textContent=planets[i].name;});updateNext();updateDiscovery();}
+  const imageCache={};
+  function loadDefaultSkins(){
+    const stamp=customVersions.slice();
+    return Promise.all(Object.entries(skinConfig.sources).map(([key,src])=>new Promise(resolve=>{
+      const image=imageCache[key]||new Image();imageCache[key]=image;
+      const done=()=>{skinConfig.levels.forEach((s,i)=>{if(s.source===key&&customVersions[i]===stamp[i])textures[i]={image,crop:s.crop};});resolve();};
+      if(image.complete&&image.naturalWidth){done();return;}image.onload=done;image.onerror=()=>{resolve();toast('部分图片加载失败，可在图片编辑器中替换');};image.src=src;
+    }))).then(()=>{repaintThumbs();repaintEditor();});
+  }
+  const editor=$('skin-editor'), editorItems=[];let editorWasPaused=false;
+  for(let i=0;i<10;i++){
+    const item=document.createElement('div');item.className='skin-slot';
+    const label=document.createElement('label');label.className='skin-upload';label.htmlFor=`skin-${i}`;label.title=`替换第${i+1}级图片`;
+    const preview=document.createElement('canvas');preview.width=112;preview.height=112;preview.setAttribute('aria-label',`第${i+1}级图片`);
+    const caption=document.createElement('span');caption.textContent=`${String(i+1).padStart(2,'0')} · 换图`;label.append(preview,caption);
+    const input=document.createElement('input');input.id=`skin-${i}`;input.type='file';input.accept='image/png,image/jpeg,image/webp';input.className='sr-only';input.setAttribute('aria-label',`替换第${i+1}级图片`);
+    const name=document.createElement('input');name.type='text';name.value=planets[i].name;name.maxLength=10;name.className='skin-name';name.setAttribute('aria-label',`第${i+1}级名称`);
+    name.addEventListener('change',()=>{planets[i].name=name.value.trim()||(stageNames[i]||originalNames[i]);name.value=planets[i].name;repaintThumbs();});
+    input.addEventListener('change',async()=>{if(input.files[0])await importSkin(i,input.files[0]);input.value='';});
+    item.append(label,input,name);$('skin-slots').append(item);editorItems.push({preview,name});
+  }
+  function repaintEditor(){editorItems.forEach((item,i)=>{const c=item.preview.getContext('2d');c.clearRect(0,0,112,112);planet(c,i,56,56,48);item.name.value=planets[i].name;});}
+  async function importSkin(i,file){
+    if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8*1024*1024){$('skin-feedback').textContent='请选择不超过 8 MB 的 PNG、JPG 或 WebP 图片。';return false;}
+    const version=++customVersions[i],url=URL.createObjectURL(file);
+    try{
+      const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=url;});
+      if(image.naturalWidth*image.naturalHeight>80000000)throw new Error('图片尺寸过大');
+      const small=document.createElement('canvas');small.width=512;small.height=512;const c=small.getContext('2d'),side=Math.min(image.naturalWidth,image.naturalHeight);
+      c.drawImage(image,(image.naturalWidth-side)/2,(image.naturalHeight-side)/2,side,side,0,0,512,512);
+      const prepared=await new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.src=small.toDataURL('image/webp',.9);});
+      if(customVersions[i]!==version)return false;textures[i]={image:prepared};repaintThumbs();repaintEditor();$('skin-feedback').textContent=`第 ${i+1} 级已替换：${file.name}`;return true;
+    }catch{$('skin-feedback').textContent='这张图片无法读取，请换一张。';return false;}finally{URL.revokeObjectURL(url);}
+  }
+  $('skin-batch').addEventListener('change',async e=>{const files=Array.from(e.target.files).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).slice(0,10);let count=0;for(let i=0;i<files.length;i++)if(await importSkin(i,files[i]))count++;e.target.value='';$('skin-feedback').textContent=`已替换 ${count} 个等级，顺序按文件名排列。`;});
+  $('edit-skins').addEventListener('click',()=>{activePointer=null;editorWasPaused=game.paused;game.paused=true;soundPlayer.stopAll();repaintEditor();editor.showModal();});
+  $('close-skins').addEventListener('click',()=>editor.close());$('done-skins').addEventListener('click',()=>editor.close());
+  editor.addEventListener('close',()=>{game.paused=editorWasPaused;lastTime=performance.now();accumulator=0;});
+  $('reset-skins').addEventListener('click',()=>{customVersions.forEach((v,i)=>{customVersions[i]++;textures[i]=null;planets[i].name=stageNames[i]||originalNames[i];});loadDefaultSkins();$('skin-feedback').textContent='已恢复默认奶龙成长图片。';});
+  const reviveButton=document.createElement('button');reviveButton.id='revive';reviveButton.className='primary revive-button';reviveButton.textContent='免费复活一次 · 试玩版';reviveButton.hidden=true;$('modal-primary').before(reviveButton);
+  reviveButton.addEventListener('click',()=>{if(game.revive()){closeModal();toast('已清理上方球体，这局还能救！');}});
+  function updateDiscovery(){thumbCanvases.forEach((p,i)=>{const found=game.discovered.has(i);p.item.className='planet-item '+(found?'unlocked':'locked');p.item.title=`${planets[i].name} · 第${i+1}级 · ${found?'已发现':'尚未发现'}`;});$('discovered').textContent=`已发现 ${game.discovered.size} / 10 种形态`;}
+  function updateNext(){const p=planets[game.next],c=$('next').getContext('2d');c.clearRect(0,0,120,100);planet(c,game.next,60,49,Math.min(32,p.radius*1.15),-.14);$('next-name').textContent=p.name;$('next-level').textContent=`LEVEL ${String(game.next+1).padStart(2,'0')}`;$('next').setAttribute('aria-label',`下一个星球：${p.name}`);}
+  function updateSound(){
+    $('sound').setAttribute('aria-pressed',String(sound));$('sound').setAttribute('aria-label',sound?'关闭音效':'开启音效');$('sound').title=sound?'关闭音效':'开启音效';
+    $('sound').innerHTML=`<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z${sound?'m4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14':'m5 4 5 6m0-6-5 6'}"/></svg>`;
+  }
+  $('sound').addEventListener('click',()=>{sound=!sound;soundPlayer.setEnabled(sound);updateSound();try{localStorage.setItem('planet-merge-sound',sound);}catch{}if(sound)soundPlayer.unlock();});
+  const soundPreview=document.createElement('button');soundPreview.id='sound-preview';soundPreview.className='small-pill';soundPreview.textContent='试听';soundPreview.setAttribute('aria-label','试听当前奶龙的完整笑声');$('sound').before(soundPreview);
+  soundPreview.addEventListener('click',()=>{sound=true;soundPlayer.setEnabled(true);updateSound();try{localStorage.setItem('planet-merge-sound',true);}catch{}soundPlayer.preview(game.current);});
+  function openModal(type) {
+    if(type!=='over')soundPlayer.stopAll();
+    previousFocus=document.activeElement;mode=type;game.paused=true;$('overlay').hidden=false;
+    reviveButton.hidden=type!=='over'||game.reviveCount>=1;
+    const config=type==='over'?['TOO MUCH DRAGON ENERGY','这下，真装不下了',`本次获得 ${game.score} 分，合成 ${game.merges} 次。再碰一局，还能更离谱。`,'再来一局','回看这一局']:type==='restart'?['ONE MORE. EVEN WEIRDER.','再养一窝奶龙？','当前这一局将重新开始，个人最佳会保留。','重新开始','继续这一局']:['TAKE A LITTLE BREAK','奶龙也要歇会儿','歇够了，继续碰一碰。','继续碰一碰','重新开始'];
+    ['modal-eyebrow','modal-title','modal-description'].forEach((id,i)=>$(id).textContent=config[i]);
+    $('modal-primary').innerHTML=config[3]+' <span>↗</span>';$('modal-secondary').textContent=config[4];
+    $('game-status').textContent=type==='over'?'本局已结束':'奶龙休息中';$('pause').setAttribute('aria-label','继续游戏');$('modal-primary').focus();
+  }
+  function closeModal(){ $('overlay').hidden=true;game.paused=false;$('game-status').textContent=game.ended?'本局已结束':'奶龙营业中';$('pause').setAttribute('aria-label','暂停游戏');(previousFocus&&previousFocus!==document.body?previousFocus:canvas).focus({preventScroll:true}); }
+  function restart(){soundPlayer.stopAll();game.reset();particles=[];floaters=[];$('score').textContent='0';$('combo').textContent='重开了，这把一定！';$('board-wrap').classList.remove('danger');closeModal();updateNext();updateDiscovery();lastTime=performance.now();accumulator=0;}
+  $('modal-primary').addEventListener('click',()=>mode==='pause'?closeModal():restart());
+  $('modal-secondary').addEventListener('click',()=>mode==='pause'?openModal('restart'):closeModal());
+  $('pause').addEventListener('click',()=>{if(game.ended){openModal('over');return;}game.paused?closeModal():openModal('pause');});
+  $('restart').addEventListener('click',()=>openModal('restart'));
+  function aimAt(event){const rect=canvas.getBoundingClientRect();game.setAim((event.clientX-rect.left)/rect.width*W);}
+  let activePointer=null;
+  canvas.addEventListener('pointerdown',e=>{if(game.paused||game.ended||activePointer!==null||e.button>0)return;e.preventDefault();activePointer=e.pointerId;canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});aimAt(e);if(sound)soundPlayer.unlock();});
+  canvas.addEventListener('pointermove',e=>{if(!game.paused&&!game.ended&&(activePointer===null||activePointer===e.pointerId))aimAt(e);});
+  canvas.addEventListener('pointerup',e=>{if(e.pointerId!==activePointer)return;aimAt(e);activePointer=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);game.drop();});
+  canvas.addEventListener('pointercancel',()=>{activePointer=null;});
+  canvas.addEventListener('lostpointercapture',()=>{activePointer=null;});
+  document.addEventListener('keydown',e=>{
+    if(editor.open)return;
+    if(!$('overlay').hidden){
+      if(e.key==='Tab'){const first=reviveButton.hidden?$('modal-primary'):reviveButton,last=$('modal-secondary');if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+      if(e.key==='Escape'||e.key.toLowerCase()==='p'){e.preventDefault();closeModal();}return;
+    }
+    if(e.target instanceof HTMLButtonElement||e.target instanceof HTMLAnchorElement)return;
+    if(['ArrowLeft','ArrowRight',' '].includes(e.key)){e.preventDefault();if(sound)soundPlayer.unlock();}
+    if(e.key==='ArrowLeft')game.setAim(game.aim-14);else if(e.key==='ArrowRight')game.setAim(game.aim+14);
+    else if(e.key===' '&&!e.repeat)game.drop();else if(e.key.toLowerCase()==='p'&&!game.ended)openModal('pause');
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&!game.paused&&!game.ended)openModal('pause');});
+  function resize(){const dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
+  window.addEventListener('resize',resize);resize();
+  function drawBackground(){
+    ctx.clearRect(0,0,W,H);ctx.fillStyle=boardColors.board;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#9c968431';for(let x=18;x<W;x+=22)for(let y=17;y<H;y+=22){ctx.beginPath();ctx.arc(x,y,.7,0,Math.PI*2);ctx.fill();}
+    ctx.strokeStyle=game.overflow?'#a94f3a':boardColors['board-line'];ctx.lineWidth=1.3;ctx.setLineDash([5,6]);ctx.beginPath();ctx.moveTo(14,LIMIT);ctx.lineTo(W-14,LIMIT);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=boardColors['board-floor'];ctx.fillRect(0,FLOOR,W,H-FLOOR);ctx.strokeStyle=boardColors['board-floor-line'];ctx.beginPath();ctx.moveTo(0,FLOOR);ctx.lineTo(W,FLOOR);ctx.stroke();
+    if(game.balls.length<12){ctx.save();ctx.textAlign='center';ctx.fillStyle=boardColors['board-note'];ctx.font='11px "Segoe UI",sans-serif';ctx.fillText('地方小了，奶龙可没变小。',W/2,H*.54);ctx.font='9px "Segoe UI",sans-serif';ctx.fillText('LESS SPACE. MORE DRAGON.',W/2,H*.585);ctx.restore();}
+  }
+  function drawAim(){
+    if(game.ended)return;const r=planets[game.current].radius,available=game.time>=game.readyAt;
+    let bottom=FLOOR-r;
+    for(const b of game.balls){const dx=Math.abs(b.position.x-game.aim),sum=b.circleRadius+r;if(dx<sum){bottom=Math.min(bottom,b.position.y-Math.sqrt(sum*sum-dx*dx));}}
+    bottom=Math.max(SPAWN,bottom);
+    ctx.save();ctx.globalAlpha=available?.85:.4;ctx.lineWidth=1;ctx.strokeStyle=boardColors['board-aim'];ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(game.aim,SPAWN+r+9);ctx.lineTo(game.aim,bottom);ctx.stroke();ctx.setLineDash([]);
+    ctx.globalAlpha=.22;ctx.fillStyle=planets[game.current].color;ctx.beginPath();ctx.arc(game.aim,bottom,r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=available?.7:.35;ctx.strokeStyle=boardColors['board-aim'];ctx.stroke();ctx.restore();
+    planet(ctx,game.current,game.aim,SPAWN,r,0,available?1:.35);
+    ctx.fillStyle=boardColors['board-aim'];ctx.beginPath();ctx.moveTo(game.aim-3,20);ctx.lineTo(game.aim+3,20);ctx.lineTo(game.aim,24);ctx.fill();
+  }
+  let lastTime=performance.now(),accumulator=0;
+  function frame(now){
+    const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;
+    if(!game.paused&&!game.ended){accumulator+=dt*1000;let count=0;while(accumulator>=1000/120&&count++<8){game.step();accumulator-=1000/120;}if(game.paused||game.ended)accumulator=0;}else accumulator=0;
+    drawBackground();drawAim();
+    for(const b of game.balls){const age=game.time-b.born;const scale=age<180?.78+.22*Math.min(1,age/180):1;planet(ctx,b.level,b.position.x,b.position.y,b.circleRadius*scale,b.angle);}
+    if(!game.paused){
+      for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=110*dt;}
+      for(const f of floaters){f.life-=dt;f.y-=30*dt;}
+      particles=particles.filter(p=>p.life>0);floaters=floaters.filter(f=>f.life>0);
+    }
+    for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life/p.max,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+    for(const f of floaters){ctx.globalAlpha=Math.min(1,f.life*2);ctx.font='600 18px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle='#527340';ctx.fillText(f.text,f.x,f.y);}ctx.globalAlpha=1;
+    $('board-wrap').classList.toggle('danger',game.overflow>100);
+    if(game.overflow>0&&!game.ended)$('game-status').textContent=`空间不足 · ${Math.max(1,Math.ceil((2200-game.overflow)/1000))} 秒`;
+    else if(!game.paused&&!game.ended)$('game-status').textContent='奶龙营业中';
+    const timer=$('mode-timer');if(timer)timer.textContent=playMode==='timed'?`${Math.ceil(game.timeLeft/1000)}s`:'∞';
+    requestAnimationFrame(frame);
+  }
+  updateNext();updateDiscovery();updateSound();updateDaily();loadDefaultSkins();requestAnimationFrame(frame);
+})();
