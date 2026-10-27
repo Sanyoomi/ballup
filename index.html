@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ddd8ce">
-  <meta name="description" content="从破壳到究极大奶龙，合成越大，表情越离谱。奶龙表情合成本地试玩原型。">
-  <title>奶龙碰碰</title>
+  <meta name="description" content="从破壳到究极大球球，合成越大，表情越离谱。球球表情合成本地试玩原型。">
+  <title>球球碰碰</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
@@ -17,27 +17,27 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="星球碰碰首页"><span class="brand-mark">✳</span> 奶龙碰碰 <span class="brand-en">MEME LAB</span></a>
+    <a class="brand" href="./" aria-label="星球碰碰首页"><span class="brand-mark">✳</span> 球球碰碰 <span class="brand-en">MEME LAB</span></a>
     <div class="header-right"><button class="icon-button" id="sound" aria-label="关闭音效" aria-pressed="true" title="关闭音效"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button></div>
   </header>
   <main>
     <div class="skin-toolbar"><span>你的表情包，也可以长大。</span><div class="toolbar-actions"><span class="mode-label">玩法</span><button class="small-pill mode-button active" data-mode="classic">经典</button><button class="small-pill mode-button" data-mode="endless">无尽</button><button class="small-pill mode-button" data-mode="timed">60秒</button><button class="small-pill mode-button" data-mode="task">任务</button><button class="small-pill mode-button" data-mode="challenge">挑战</button><button class="small-pill mode-button" data-mode="free">轻松</button><button id="edit-skins" class="small-pill">✎ 换成长图片</button></div></div>
-    <section class="intro"><div class="eyebrow"><span></span> SMALL DRAGON. BIG MEME ENERGY.</div><h1>小小奶龙，<span>越碰越离谱。</span><svg class="title-star" viewBox="0 0 40 40"><path d="m20 1 4 13 13 6-13 4-4 15-5-15L1 20l14-6Z"/></svg></h1><p>从刚刚破壳，到究极大奶龙。你能养到第几级？</p></section>
+    <section class="intro"><div class="eyebrow"><span></span> SMALL BALLS. BIG MERGE ENERGY.</div><h1>小小球球，<span>越碰越离谱。</span><svg class="title-star" viewBox="0 0 40 40"><path d="m20 1 4 13 13 6-13 4-4 15-5-15L1 20l14-6Z"/></svg></h1><p>从刚刚破壳，到究极大球球。你能养到第几级？</p></section>
     <div class="play-layout">
       <aside class="left-column">
         <section class="score-card"><div class="card-label">本次得分 <span>↗</span></div><div id="score" class="score-value">0</div><div class="best"><svg viewBox="0 0 24 24"><path d="M8 4h8v7a4 4 0 0 1-8 0V4Zm0 2H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 2v5m-4 0h8"/></svg> 个人最佳 <strong id="best">0</strong></div></section>
-        <section class="howto"><div class="section-label">先碰一个，问题不大 <span>↙</span></div><div class="instruction"><span class="step">01</span><div><strong>左右移动</strong><p>在游戏区域拖动，选择落点</p></div></div><div class="instruction"><span class="step">02</span><div><strong>相同表情，碰一起</strong><p>两只同级奶龙，合成更大一只</p></div></div><div class="instruction"><span class="step">03</span><div><strong>离谱，也要留点空间</strong><p>别让奶龙堆过上方虚线</p></div></div><div class="keyboard"><kbd>←</kbd><kbd>→</kbd> 移动 <span>·</span> <kbd>空格</kbd> 释放</div></section>
+        <section class="howto"><div class="section-label">先碰一个，问题不大 <span>↙</span></div><div class="instruction"><span class="step">01</span><div><strong>左右移动</strong><p>在游戏区域拖动，选择落点</p></div></div><div class="instruction"><span class="step">02</span><div><strong>相同表情，碰一起</strong><p>两只同级球球，合成更大一只</p></div></div><div class="instruction"><span class="step">03</span><div><strong>离谱，也要留点空间</strong><p>别让球球堆过上方虚线</p></div></div><div class="keyboard"><kbd>←</kbd><kbd>→</kbd> 移动 <span>·</span> <kbd>空格</kbd> 释放</div></section>
         <section class="tool-card"><div class="section-label">特殊道具 <span>自愿解锁</span></div><p class="tool-description">看完奖励广告后，选择一个道具放入下一次投放。</p><div id="special-tools" class="special-tools"></div><button id="watch-ad" class="ad-button">▶ 看奖励广告，解锁一次</button><span id="ad-status" class="ad-status">不会自动播放，完全自愿</span></section>
         <div class="little-note"><svg viewBox="0 0 48 48"><path d="M24 4v9m0 22v9M4 24h9m22 0h9M10 10l7 7m14 14 7 7m0-28-7 7M17 31l-7 7"/></svg><p>每一次碰撞，<br>都有新的可能。</p></div>
       </aside>
-      <section class="game-column" aria-label="奶龙合成游戏">
+      <section class="game-column" aria-label="球球合成游戏">
         <div class="board-top"><span><i></i> <span id="game-status">宇宙运行中</span></span><span id="combo" aria-live="polite">准备好，发射！</span><span id="mode-timer" class="mode-timer">∞</span></div>
-        <div class="board-wrap" id="board-wrap"><canvas id="game" width="360" height="500" tabindex="0" role="application" aria-label="奶龙合成游戏区域。左右拖动后松手释放，或使用左右方向键移动、空格释放，P键暂停。"></canvas><span class="limit-label">保持在这条线下方</span><div id="toast" class="toast" role="status"></div><div class="overlay" id="overlay" hidden><div class="modal"><div class="modal-orbit">✳</div><p id="modal-eyebrow" class="eyebrow">TAKE A LITTLE BREAK</p><h2 id="modal-title">奶龙也要歇会儿</h2><p id="modal-description">歇够了，继续碰一碰。</p><div id="modal-stats" class="modal-stats" hidden><span>得分 <b id="modal-score">0</b></span><span>连击 <b id="modal-combo">0</b></span><span>模式 <b id="modal-mode">经典</b></span></div><button id="modal-primary" class="primary">继续碰一碰 <span>↗</span></button><button id="share-result" class="small-pill share-result" hidden>分享这局战绩</button><button id="modal-secondary" class="text-button">重新开始</button></div></div></div>
+        <div class="board-wrap" id="board-wrap"><canvas id="game" width="360" height="500" tabindex="0" role="application" aria-label="球球合成游戏区域。左右拖动后松手释放，或使用左右方向键移动、空格释放，P键暂停。"></canvas><span class="limit-label">保持在这条线下方</span><div id="toast" class="toast" role="status"></div><div class="overlay" id="overlay" hidden><div class="modal"><div class="modal-orbit">✳</div><p id="modal-eyebrow" class="eyebrow">TAKE A LITTLE BREAK</p><h2 id="modal-title">球球也要歇会儿</h2><p id="modal-description">歇够了，继续碰一碰。</p><div id="modal-stats" class="modal-stats" hidden><span>得分 <b id="modal-score">0</b></span><span>连击 <b id="modal-combo">0</b></span><span>模式 <b id="modal-mode">经典</b></span></div><button id="modal-primary" class="primary">继续碰一碰 <span>↗</span></button><button id="share-result" class="small-pill share-result" hidden>分享这局战绩</button><button id="modal-secondary" class="text-button">重新开始</button></div></div></div>
         <div class="board-bottom"><span><svg viewBox="0 0 24 24"><path d="m9 4 6 0m-3 0v12m-5-5 5 5 5-5M5 20h14"/></svg> 拖动瞄准 · 松手释放</span><div><button class="small-button" id="pause" aria-label="暂停游戏" title="暂停 / P"><svg viewBox="0 0 24 24"><path d="M8 5v14m8-14v14"/></svg></button><button class="small-button" id="restart" aria-label="重新开始" title="重新开始"><svg viewBox="0 0 24 24"><path d="M4 11a8 8 0 1 1 2 7M4 4v7h7"/></svg></button></div></div>
       </section>
       <aside class="right-column">
-        <section class="next-card"><div class="section-label">下一只奶龙 <span>NEXT UP</span></div><div class="next-preview"><canvas id="next" width="120" height="100" aria-label="下一个奶龙预览"></canvas><div><strong id="next-name">刚破壳</strong><span id="next-level">LEVEL 01</span></div></div><div class="next-note" id="next-note"><span>✧</span> <span id="next-note-text">它来了，它又来了</span></div></section>
-        <section class="evolution"><div class="section-label">奶龙成长图鉴 <span>01—10</span></div><p class="section-description">破壳 → 表情进化 → 究极大奶龙</p><div class="evolution-grid" id="evolution"></div><div class="evolution-footer"><span class="legend-dot"></span> <span id="discovered">已发现 3 / 10 种形态</span></div></section>
+        <section class="next-card"><div class="section-label">下一只球球 <span>NEXT UP</span></div><div class="next-preview"><canvas id="next" width="120" height="100" aria-label="下一个球球预览"></canvas><div><strong id="next-name">刚破壳</strong><span id="next-level">LEVEL 01</span></div></div><div class="next-note" id="next-note"><span>✧</span> <span id="next-note-text">它来了，它又来了</span></div></section>
+        <section class="evolution"><div class="section-label">球球成长图鉴 <span>01—10</span></div><p class="section-description">破壳 → 表情进化 → 究极大球球</p><div class="evolution-grid" id="evolution"></div><div class="evolution-footer"><span class="legend-dot"></span> <span id="discovered">已发现 3 / 10 种形态</span></div></section>
         <div class="tip"><span>✦</span><div><strong>今日小任务</strong><p id="daily-task">完成 5 次合成 · 0 / 5</p><p id="task-extra">达到 500 分 · 0 / 500</p><p id="task-discover">解锁 1 个新形态 · 0 / 1</p></div></div><section class="leaderboard"><div class="section-label">我的排行榜 <span>本机记录</span></div><div id="leaderboard-list"></div></section>
       </aside>
     </div>
