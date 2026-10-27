@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ball Up</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header>
+        <div>
+          <p class="eyebrow">BALL UP · 第一版</p>
+          <h1>合成小球</h1>
+          <p class="hint">拖拽顶部的小球，松开后投放。相同大小的小球碰撞会合成更大的球。</p>
+        </div>
+        <div class="stats"><span>分数 <strong id="score">0</strong></span><button id="restart">重新开始</button></div>
+      </header>
+      <section class="board-wrap">
+        <canvas id="game" aria-label="合成小球游戏区域"></canvas>
+        <div id="game-over" class="game-over hidden"><h2>游戏结束</h2><p>球堆超过了危险线</p><button id="restart-overlay">再来一局</button></div>
+      </section>
+      <p class="legend"><span class="dot"></span>危险线　 <span class="key">鼠标 / 触摸</span> 拖拽投放</p>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>
