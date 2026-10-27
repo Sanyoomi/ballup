@@ -12,6 +12,11 @@ const levels = [
   { r: 59, color: '#34d399', glow: '#34d39966' }, { r: 76, color: '#22d3ee', glow: '#22d3ee66' },
   { r: 96, color: '#818cf8', glow: '#818cf866' }
 ];
+const colorNames = ['莓果红', '活力橙', '阳光黄', '青柠绿', '薄荷绿', '天空蓝', '星空紫'];
+const themes = {
+  dragon: ['#f97316', '#fb923c', '#facc15', '#fde047', '#84cc16', '#22c55e', '#06b6d4'],
+  court: ['#f97316', '#fb923c', '#facc15', '#a855f7', '#7c3aed', '#2563eb', '#111827']
+};
 const STORAGE_KEY = 'ballup-diy-preset-v1';
 const custom = levels.map((_, i) => ({ image: '', audio: '', imageName: '', audioName: '' }));
 const audioCache = new Map();
@@ -22,7 +27,7 @@ function renderCustomizer() {
   const root = document.querySelector('#customizer'); if (!root) return; root.innerHTML = '';
   custom.forEach((item, i) => {
     const card = document.createElement('div'); card.className = 'custom-card';
-    card.innerHTML = `<strong>等级 ${i + 1}</strong><div class="preview" style="background-color:${levels[i].color};${item.image ? `background-image:url('${item.image}')` : ''}"></div><label>照片<input type="file" accept="image/*" data-image="${i}"></label><label>音效<input type="file" accept="audio/*" data-audio="${i}"></label>`;
+    card.innerHTML = `<strong><span class="color-chip" style="background:${levels[i].color}"></span>等级 ${i + 1}</strong><span class="color-name">${colorNames[i]} · ${levels[i].color}</span><div class="preview" style="background-color:${levels[i].color};${item.image ? `background-image:url('${item.image}')` : ''}"></div><label>照片<input type="file" accept="image/*" data-image="${i}"></label><label>音效<input type="file" accept="audio/*" data-audio="${i}"></label>`;
     root.appendChild(card);
   });
   root.querySelectorAll('[data-image]').forEach(input => input.addEventListener('change', e => readFile(e.target.files[0], file => { const i = +e.target.dataset.image; custom[i].image = file.data; custom[i].imageName = file.name; persist(); renderCustomizer(); })));
@@ -36,6 +41,7 @@ function setupCustomizer() {
   document.querySelector('#save-preset').onclick = () => { persist(); const blob = new Blob([JSON.stringify(custom)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ballup-preset.json'; a.click(); URL.revokeObjectURL(a.href); setStatus('预设已下载 ✓'); };
   document.querySelector('#preset-file').onchange = e => readFile(e.target.files[0], file => { try { applySaved(JSON.parse(atob(file.data.split(',')[1]))); persist(); setStatus('预设已加载 ✓'); } catch (_) { setStatus('预设文件无法读取'); } });
   document.querySelector('#reset-preset').onclick = () => { custom.forEach(x => Object.assign(x, { image: '', audio: '', imageName: '', audioName: '' })); persist(); renderCustomizer(); };
+  document.querySelectorAll('[data-theme]').forEach(button => button.onclick = () => { themes[button.dataset.theme].forEach((color, i) => levels[i].color = color); renderCustomizer(); persist(); setStatus(`${button.textContent}已应用 ✓`); });
 }
 const engine = Engine.create({ gravity: { x: 0, y: 1.05 } });
 engine.positionIterations = 8; engine.velocityIterations = 6; engine.constraintIterations = 4;

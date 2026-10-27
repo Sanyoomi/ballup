@@ -26,11 +26,18 @@ canvas:active { cursor:grabbing; }
 .panel-heading .eyebrow { margin-bottom:5px; }
 #save-status { color:#91a5c7; font-size:12px; padding-top:8px; text-align:right; }
 .panel-copy { color:#a9b8d0; font-size:13px; margin:10px 0 16px; line-height:1.5; }
+.theme-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 14px; color:#91a5c7; font-size:12px; }
+.theme-button { min-height:34px; padding:7px 12px !important; border:1px solid #ffffff22; color:#fff; box-shadow:none; }
+.theme-button.dragon { background:linear-gradient(135deg,#f59e0b,#facc15); }
+.theme-button.court { background:linear-gradient(135deg,#7c3aed,#f97316); }
 .customizer { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
 .custom-card { min-width:0; padding:10px; border-radius:14px; background:#0c1429aa; border:1px solid #ffffff12; }
-.custom-card strong { display:block; font-size:12px; margin-bottom:8px; color:#dbeafe; }
-.custom-card label { display:block; color:#91a5c7; font-size:11px; margin:6px 0; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.custom-card input { width:100%; min-height:28px; font-size:11px; color:#91a5c7; }
+.custom-card strong { display:flex; align-items:center; gap:6px; font-size:12px; margin-bottom:8px; color:#dbeafe; }
+.color-chip { width:11px; height:11px; display:inline-block; border-radius:50%; border:1px solid #fff8; }
+.color-name { display:block; color:#91a5c7; font-size:10px; margin:-4px 0 7px; }
+.custom-card label { display:flex; flex-direction:column; gap:5px; color:#c7d2fe; font-size:11px; margin:8px 0 0; cursor:pointer; }
+.custom-card label::before { content:'点击更换'; color:#7dd3fc; font-size:10px; font-weight:700; }
+.custom-card input { width:100%; min-height:34px; padding:5px; font-size:11px; color:#91a5c7; border:1px solid #ffffff1c; border-radius:8px; background:#ffffff0b; }
 .preview { width:38px; height:38px; border-radius:50%; margin-bottom:5px; background:linear-gradient(135deg,#334155,#64748b); background-size:cover; background-position:center; border:2px solid #ffffff44; }
 .preset-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
 .preset-actions button, .upload-preset { font-size:12px; padding:10px 12px; min-height:40px; }
