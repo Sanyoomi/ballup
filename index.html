@@ -10,9 +10,9 @@
     <main class="game-shell">
       <header>
         <div>
-          <p class="eyebrow">BALL UP · 第一版</p>
+          <p class="eyebrow">BALL UP · MERGE LAB</p>
           <h1>合成小球</h1>
-          <p class="hint">拖拽顶部的小球，松开后投放。相同大小的小球碰撞会合成更大的球。</p>
+          <p class="hint">左右拖拽瞄准，松开投放。相同大小的小球碰撞后会合成为更大的球。</p>
         </div>
         <div class="stats"><span>分数 <strong id="score">0</strong></span><button id="restart">重新开始</button></div>
       </header>
@@ -22,6 +22,7 @@
       </section>
       <p class="legend"><span class="dot"></span>危险线　 <span class="key">鼠标 / 触摸</span> 拖拽投放</p>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
     <script src="game.js"></script>
   </body>
 </html>
