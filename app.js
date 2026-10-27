@@ -166,7 +166,7 @@
   $('modal-primary').addEventListener('click',()=>mode==='pause'?closeModal():restart());
   $('modal-secondary').addEventListener('click',()=>mode==='pause'?openModal('restart'):closeModal());
   $('pause').addEventListener('click',()=>{if(game.ended){openModal('over');return;}game.paused?closeModal():openModal('pause');});
-  $('restart').addEventListener('click',()=>openModal('restart'));
+  $('restart').addEventListener('click',restart);
   function aimAt(event){const rect=canvas.getBoundingClientRect();game.setAim((event.clientX-rect.left)/rect.width*W);}
   let activePointer=null;
   canvas.addEventListener('pointerdown',e=>{if(game.paused||game.ended||activePointer!==null||e.button>0)return;e.preventDefault();activePointer=e.pointerId;canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});aimAt(e);if(sound)soundPlayer.unlock();});
