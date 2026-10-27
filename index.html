@@ -16,10 +16,10 @@
         </div>
         <div class="stats"><span>分数 <strong id="score">0</strong></span><button id="restart">重新开始</button></div>
       </header>
-      <nav class="mode-bar" aria-label="游戏模式"><span>模式</span><button class="mode active" data-mode="classic">经典</button><button class="mode" data-mode="timed">60秒挑战</button><button class="mode" data-mode="free">轻松模式</button><span class="timer" id="timer">∞</span></nav>
+      <nav class="mode-bar" aria-label="游戏模式"><span>模式</span><button class="mode active" data-mode="classic">经典</button><button class="mode" data-mode="timed">60秒挑战</button><button class="mode" data-mode="free">轻松模式</button><span class="timer" id="timer">∞</span><label class="world-select">世界<select id="world-theme"><option value="candy">糖果</option><option value="space">太空</option><option value="ocean">海洋</option><option value="dino">恐龙</option><option value="campus">校园</option><option value="festival">节日</option></select></label></nav>
       <section class="board-wrap">
         <canvas id="game" aria-label="合成小球游戏区域"></canvas>
-        <div id="game-over" class="game-over hidden"><h2>游戏结束</h2><p>球堆超过了危险线</p><button id="restart-overlay">再来一局</button></div>
+        <div id="game-over" class="game-over hidden"><h2>本局完成</h2><p id="result-copy">球球还在期待下一次合成</p><div class="result-card"><span>本局分数 <b id="result-score">0</b></span><span>最高合成 <b id="result-level">草莓球</b></span><span>最佳连击 <b id="result-combo">0</b></span></div><div class="result-actions"><button id="restart-overlay">再来一局</button><button id="share-result" class="secondary">分享战绩</button></div></div>
       </section>
       <div class="game-info"><span><b id="combo">0</b> COMBO</span><span>最高分 <b id="best-score">0</b></span><span>已发现 <b id="discovered">1/7</b></span></div>
       <p class="legend"><span class="dot"></span>危险线　 <span class="key">鼠标 / 触摸</span> 拖拽投放</p>

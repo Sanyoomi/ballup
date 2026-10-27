@@ -15,7 +15,13 @@ const levels = [
 const colorNames = ['莓果红', '活力橙', '阳光黄', '青柠绿', '薄荷绿', '天空蓝', '星空紫'];
 const themes = {
   dragon: ['#f97316', '#fb923c', '#facc15', '#fde047', '#84cc16', '#22c55e', '#06b6d4'],
-  court: ['#f97316', '#fb923c', '#facc15', '#a855f7', '#7c3aed', '#2563eb', '#111827']
+  court: ['#f97316', '#fb923c', '#facc15', '#a855f7', '#7c3aed', '#2563eb', '#111827'],
+  candy: ['#fb7185', '#fb923c', '#facc15', '#f9a8d4', '#c084fc', '#a5b4fc', '#67e8f9'],
+  space: ['#c084fc', '#818cf8', '#6366f1', '#38bdf8', '#22d3ee', '#0ea5e9', '#e0e7ff'],
+  ocean: ['#fda4af', '#fdba74', '#fde68a', '#86efac', '#2dd4bf', '#22d3ee', '#60a5fa'],
+  dino: ['#fb7185', '#fb923c', '#facc15', '#84cc16', '#22c55e', '#14b8a6', '#64748b'],
+  campus: ['#fda4af', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd'],
+  festival: ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7']
 };
 const STORAGE_KEY = 'ballup-diy-preset-v1';
 const custom = levels.map((_, i) => ({ image: '', audio: '', imageName: '', audioName: '' }));
@@ -36,6 +42,7 @@ function updateProgressUI() {
 function updateTask(id, value) { progress.tasks[id] = Math.max(progress.tasks[id] || 0, value); }
 function addParticles(x, y, level) { const color = levels[level].color; for (let i = 0; i < 18; i++) { const angle = Math.random() * Math.PI * 2, speed = 1.5 + Math.random() * 4; particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, color }); } }
 function playMergeSound(level) { if (custom[level].audio) { playCustomSound(level); return; } try { audioContext ||= new (window.AudioContext || window.webkitAudioContext)(); const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = 260 + level * 70; g.gain.setValueAtTime(.0001, audioContext.currentTime); g.gain.exponentialRampToValueAtTime(.16, audioContext.currentTime + .02); g.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + .22); o.connect(g).connect(audioContext.destination); o.start(); o.stop(audioContext.currentTime + .24); } catch (_) {} }
+function applyTheme(name) { if (!themes[name]) return; themes[name].forEach((color, i) => { levels[i].color = color; levels[i].glow = `${color}66`; }); renderCustomizer(); saveProgress(); setStatus('主题已切换 ✓'); }
 function setStatus(message) { const el = document.querySelector('#save-status'); if (el) { el.textContent = message; clearTimeout(setStatus.timer); setStatus.timer = setTimeout(() => el.textContent = '设置会自动保存在本机', 2200); } }
 function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(custom)); setStatus('已自动保存 ✓'); }
 function applySaved(data) { if (!Array.isArray(data)) return; data.slice(0, levels.length).forEach((item, i) => Object.assign(custom[i], item)); renderCustomizer(); }
@@ -58,8 +65,12 @@ function setupCustomizer() {
   document.querySelector('#save-preset').onclick = () => { persist(); const blob = new Blob([JSON.stringify(custom)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ballup-preset.json'; a.click(); URL.revokeObjectURL(a.href); setStatus('预设已下载 ✓'); };
   document.querySelector('#preset-file').onchange = e => readFile(e.target.files[0], file => { try { applySaved(JSON.parse(atob(file.data.split(',')[1]))); persist(); setStatus('预设已加载 ✓'); } catch (_) { setStatus('预设文件无法读取'); } });
   document.querySelector('#reset-preset').onclick = () => { custom.forEach(x => Object.assign(x, { image: '', audio: '', imageName: '', audioName: '' })); persist(); renderCustomizer(); };
-  document.querySelectorAll('[data-theme]').forEach(button => button.onclick = () => { themes[button.dataset.theme].forEach((color, i) => levels[i].color = color); renderCustomizer(); persist(); setStatus(`${button.textContent}已应用 ✓`); });
+  document.querySelectorAll('[data-theme]').forEach(button => button.onclick = () => applyTheme(button.dataset.theme));
+  const worldTheme = document.querySelector('#world-theme'); if (worldTheme) worldTheme.onchange = () => applyTheme(worldTheme.value);
+  const share = document.querySelector('#share-result'); if (share) share.onclick = shareResult;
 }
+function finishResult() { const scoreNode = document.querySelector('#result-score'), levelNode = document.querySelector('#result-level'), comboNode = document.querySelector('#result-combo'); if (scoreNode) scoreNode.textContent = score; if (levelNode) levelNode.textContent = ballNames[progress.maxLevel] || ballNames[0]; if (comboNode) comboNode.textContent = combo; }
+function shareResult() { const text = `我在《合成小球》${mode === 'timed' ? '60秒挑战' : ''}中拿到 ${score} 分，最高合成${ballNames[progress.maxLevel]}！`; if (navigator.share) navigator.share({ title: '我的球球战绩', text }).catch(() => {}); else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => setStatus('战绩已复制 ✓')); }
 const engine = Engine.create({ gravity: { x: 0, y: 1.05 } });
 engine.positionIterations = 8; engine.velocityIterations = 6; engine.constraintIterations = 4;
 const world = engine.world;
@@ -119,8 +130,8 @@ function update(now) {
   particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .12; p.life -= .035; }); particles = particles.filter(p => p.life > 0);
   if (now - lastMergeAt > 1500 && combo) { combo = 0; updateProgressUI(); }
   if (gameOver) return;
-  if (mode === 'timed') { timeLeft -= delta / 1000; updateTimer(); if (timeLeft <= 0) { timeLeft = 0; gameOver = true; overEl.classList.remove('hidden'); } }
-  if (mode !== 'free') { const stableAtLine = balls.some(({ body }) => body.position.y - body.circleRadius < dangerY && Math.abs(body.velocity.y) < 0.7 && Math.abs(body.velocity.x) < 0.7 && now - body.game.born > 900); if (stableAtLine) { if (!dangerSince) dangerSince = now; if (now - dangerSince > 850) { gameOver = true; overEl.classList.remove('hidden'); } } else dangerSince = 0; }
+  if (mode === 'timed') { timeLeft -= delta / 1000; updateTimer(); if (timeLeft <= 0) { timeLeft = 0; gameOver = true; finishResult(); overEl.classList.remove('hidden'); } }
+  if (mode !== 'free') { const stableAtLine = balls.some(({ body }) => body.position.y - body.circleRadius < dangerY && Math.abs(body.velocity.y) < 0.7 && Math.abs(body.velocity.x) < 0.7 && now - body.game.born > 900); if (stableAtLine) { if (!dangerSince) dangerSince = now; if (now - dangerSince > 850) { gameOver = true; finishResult(); overEl.classList.remove('hidden'); } } else dangerSince = 0; }
 }
 function drawBall(body, level, alpha = 1) {
   const spec = levels[level], { x, y } = body.position, r = spec.r;
