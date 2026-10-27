@@ -15,7 +15,7 @@
   const textures=new Array(10), originalNames=planets.map(p=>p.name), customVersions=new Array(10).fill(0);
   const stageNames=['刚破壳','乖乖球','傻乐球','干饭球','发呆球','爆哭球','逐渐离谱','开始膨胀','小球得志','究极大球'];
   stageNames.forEach((name,i)=>planets[i].name=name);
-  let best=0,sound=true,particles=[],specialEffects=[],floaters=[],toastTimer,mode='pause',previousFocus=null,playMode='classic',dailyMerges=0,dailyScore=0,dailyDiscover=0,lastDiscoveryCount=0;
+  let best=0,sound=true,particles=[],specialEffects=[],floaters=[],toastTimer,mode='pause',previousFocus=null,playMode='classic',pendingMode=null,dailyMerges=0,dailyScore=0,dailyDiscover=0,lastDiscoveryCount=0;
   try { const savedDaily=JSON.parse(localStorage.getItem('planet-merge-daily')||'{}'); const today=new Date().toISOString().slice(0,10); if(savedDaily.date===today){dailyMerges=savedDaily.merges||0;dailyScore=savedDaily.score||0;dailyDiscover=savedDaily.discover||0;} else localStorage.setItem('planet-merge-daily',JSON.stringify({date:today,merges:0,score:0,discover:0})); } catch{}
   try {best=Number(localStorage.getItem('planet-merge-best'))||0;const saved=localStorage.getItem('planet-merge-sound');if(saved!==null)sound=saved==='true';}catch{}
   const soundPlayer=new MemeAudio.SoundEngine({assets:window.MemeSounds,enabled:sound,onUnavailable:()=>toast('大笑音效暂不可用，已改用弹跳音效')});
@@ -52,7 +52,8 @@
   });
   renderTools();$('watch-ad').addEventListener('click',watchRewarded);
   lastDiscoveryCount=game.discovered.size;
-  function chooseMode(next){playMode=next;game.mode=next;document.querySelectorAll('.mode-button').forEach(button=>button.classList.toggle('active',button.dataset.mode===next));const labels={timed:'60秒挑战',free:'轻松模式',endless:'无尽模式',task:'任务模式',challenge:'挑战模式',classic:'经典模式'};toast(`已切换到${labels[next]||'经典模式'}`);restart();}
+  function chooseMode(next){if(next===playMode)return;pendingMode=next;openModal('mode-switch');}
+  function confirmModeSwitch(){if(!pendingMode)return;playMode=pendingMode;game.mode=playMode;pendingMode=null;document.querySelectorAll('.mode-button').forEach(button=>button.classList.toggle('active',button.dataset.mode===playMode));const labels={timed:'60秒挑战',free:'轻松模式',endless:'无尽模式',task:'任务模式',challenge:'挑战模式',classic:'经典模式'};toast(`已切换到${labels[playMode]||'经典模式'}`);restart();}
   document.querySelectorAll('.mode-button').forEach(button=>button.addEventListener('click',()=>chooseMode(button.dataset.mode)));
   // Draw planets with surface markings, faces and light; rotation follows the body.
   function planet(c,level,x,y,r,angle=0,alpha=1,time=0) {
@@ -155,7 +156,9 @@
     if(type!=='over')soundPlayer.stopAll();
     previousFocus=document.activeElement;mode=type;game.paused=true;$('overlay').hidden=false;
     reviveButton.hidden=type!=='over'||game.reviveCount>=1;
-    const config=type==='over'?['TOO MUCH BALL ENERGY','这下，真装不下了',`本次获得 ${game.score} 分，合成 ${game.merges} 次。再碰一局，还能更离谱。`,'再来一局','回看这一局']:type==='restart'?['ONE MORE. EVEN WEIRDER.','再养一窝球球？','当前这一局将重新开始，个人最佳会保留。','重新开始','继续这一局']:['TAKE A LITTLE BREAK','球球也要歇会儿','歇够了，继续碰一碰。','继续碰一碰','重新开始'];
+    const labels={timed:'60秒挑战',free:'轻松模式',endless:'无尽模式',task:'任务模式',challenge:'挑战模式',classic:'经典模式'};
+    const modeRules={free:'无危险线，特殊球出现更频繁',endless:'无危险线，专注冲击最高分',timed:'60 秒内尽可能合成',task:'完成 5 次合成并达到 500 分',challenge:'固定球序，考验规划'};
+    const config=type==='over'?['TOO MUCH BALL ENERGY','这下，真装不下了',`本次获得 ${game.score} 分，合成 ${game.merges} 次。再碰一局，还能更离谱。`,'再来一局','回看这一局']:type==='mode-switch'?['CHANGE PLAY MODE',`切换到${labels[pendingMode]||'新模式'}？`,`当前模式的分数、球堆和进度会清零。新规则：${modeRules[pendingMode]||'标准危险线玩法'}。`,'确认切换','保留当前模式']:type==='restart'?['ONE MORE. EVEN WEIRDER.','再养一窝球球？','当前这一局将重新开始，个人最佳会保留。','重新开始','继续这一局']:['TAKE A LITTLE BREAK','球球也要歇会儿','歇够了，继续碰一碰。','继续碰一碰','重新开始'];
     ['modal-eyebrow','modal-title','modal-description'].forEach((id,i)=>$(id).textContent=config[i]);
     $('modal-primary').innerHTML=config[3]+' <span>↗</span>';$('modal-secondary').textContent=config[4];
     const stats=$('modal-stats'),share=$('share-result');if(stats){stats.hidden=type!=='over';$('modal-score').textContent=game.score.toLocaleString();$('modal-combo').textContent=game.combo;$('modal-mode').textContent={timed:'60秒',free:'轻松',task:'任务',challenge:'挑战',endless:'无尽',classic:'经典'}[playMode]||'经典';}if(share)share.hidden=type!=='over';
@@ -164,8 +167,8 @@
   $('share-result').addEventListener('click',async()=>{const text=`我在《球球碰碰》${{timed:'60秒挑战',free:'轻松模式',task:'任务模式',challenge:'挑战模式',endless:'无尽模式',classic:'经典模式'}[playMode]||'经典模式'}拿到 ${game.score} 分，连续合成 ${game.combo} 次！`;try{if(navigator.share)await navigator.share({title:'我的球球战绩',text});else{await navigator.clipboard.writeText(text);toast('战绩文案已复制，去分享给朋友吧');}}catch{}});
   function closeModal(){ $('overlay').hidden=true;game.paused=false;$('game-status').textContent=game.ended?'本局已结束':'球球营业中';$('pause').setAttribute('aria-label','暂停游戏');(previousFocus&&previousFocus!==document.body?previousFocus:canvas).focus({preventScroll:true}); }
   function restart(){soundPlayer.stopAll();game.reset();lastDiscoveryCount=game.discovered.size;particles=[];specialEffects=[];floaters=[];$('score').textContent='0';$('combo').textContent='重开了，这把一定！';$('board-wrap').classList.remove('danger');closeModal();updateNext();updateDiscovery();renderTools();lastTime=performance.now();accumulator=0;}
-  $('modal-primary').addEventListener('click',()=>mode==='pause'?closeModal():restart());
-  $('modal-secondary').addEventListener('click',()=>mode==='pause'?openModal('restart'):closeModal());
+  $('modal-primary').addEventListener('click',()=>mode==='pause'?closeModal():mode==='mode-switch'?confirmModeSwitch():restart());
+  $('modal-secondary').addEventListener('click',()=>mode==='pause'?openModal('restart'):mode==='mode-switch'?(pendingMode=null,closeModal()):closeModal());
   $('pause').addEventListener('click',()=>{if(game.ended){openModal('over');return;}game.paused?closeModal():openModal('pause');});
   $('restart').addEventListener('click',restart);
   function aimAt(event){const rect=canvas.getBoundingClientRect();game.setAim((event.clientX-rect.left)/rect.width*W);}

@@ -42,8 +42,8 @@
       this.reset();
     }
     roll() { if(this.mode==='challenge'){const sequence=[0,1,0,2,1,0,3,0,1,2,0,1,0,3];const value=sequence[this.challengeIndex%sequence.length];this.challengeIndex++;return value;} const n=this.random(); return n<.48?0:n<.78?1:n<.94?2:3; }
-    // Special balls are intentionally rare during normal play; rewarded ads are the primary source.
-    rollSpecial() { const n=this.random(); return n<.001?'bomb':n<.002?'rainbow':n<.003?'freeze':n<.004?'magnet':n<.005?'split':null; }
+    // Special balls remain scarce in normal play; free mode is the playful exception.
+    rollSpecial() { const n=this.random(),rate=this.mode==='free'?.08:this.mode==='challenge'?.001:this.mode==='timed'?.008:this.mode==='task'?.012:.005; return n<rate*.2?'bomb':n<rate*.4?'rainbow':n<rate*.6?'freeze':n<rate*.8?'magnet':n<rate?'split':null; }
     reset(seed = true) {
       Composite.clear(this.engine.world,false); Engine.clear(this.engine);
       this.time=0; this.score=0; this.drops=0; this.merges=0; this.ended=false; this.paused=false; this.won=false;
@@ -139,9 +139,9 @@
         }
       }
       if(this.mode==='timed') {this.timeLeft-=dt;if(this.timeLeft<=0){this.timeLeft=0;this.ended=true;this.onEnd(this.score);}}
-      const overflow=this.mode!=='free'&&this.balls.some(b=>this.time-b.born>1100&&b.position.y-b.circleRadius<LIMIT&&b.speed<2);
+      const overflow=!['free','endless'].includes(this.mode)&&this.balls.some(b=>this.time-b.born>1100&&b.position.y-b.circleRadius<LIMIT&&b.speed<2);
       this.overflow=overflow?this.overflow+dt:0;
-      if(this.mode!=='free'&&this.overflow>=2200) {this.ended=true;this.onEnd(this.score);}
+      if(!['free','endless'].includes(this.mode)&&this.overflow>=2200) {this.ended=true;this.onEnd(this.score);}
     }
   }
   return {Game, PLANETS, SPECIALS, WIDTH, HEIGHT, FLOOR, LIMIT, SPAWN};
