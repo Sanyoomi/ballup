@@ -42,7 +42,8 @@
       this.reset();
     }
     roll() { if(this.mode==='challenge'){const sequence=[0,1,0,2,1,0,3,0,1,2,0,1,0,3];const value=sequence[this.challengeIndex%sequence.length];this.challengeIndex++;return value;} const n=this.random(); return n<.48?0:n<.78?1:n<.94?2:3; }
-    rollSpecial() { const n=this.random(); return n<.035?'bomb':n<.06?'rainbow':n<.082?'freeze':n<.104?'magnet':n<.126?'split':null; }
+    // Special balls are intentionally rare during normal play; rewarded ads are the primary source.
+    rollSpecial() { const n=this.random(); return n<.001?'bomb':n<.002?'rainbow':n<.003?'freeze':n<.004?'magnet':n<.005?'split':null; }
     reset(seed = true) {
       Composite.clear(this.engine.world,false); Engine.clear(this.engine);
       this.time=0; this.score=0; this.drops=0; this.merges=0; this.ended=false; this.paused=false; this.won=false;
