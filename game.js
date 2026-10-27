@@ -12,6 +12,32 @@ const levels = [
   { r: 59, color: '#34d399', glow: '#34d39966' }, { r: 76, color: '#22d3ee', glow: '#22d3ee66' },
   { r: 96, color: '#818cf8', glow: '#818cf866' }
 ];
+const STORAGE_KEY = 'ballup-diy-preset-v1';
+const custom = levels.map((_, i) => ({ image: '', audio: '', imageName: '', audioName: '' }));
+const audioCache = new Map();
+function setStatus(message) { const el = document.querySelector('#save-status'); if (el) { el.textContent = message; clearTimeout(setStatus.timer); setStatus.timer = setTimeout(() => el.textContent = '设置会自动保存在本机', 2200); } }
+function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(custom)); setStatus('已自动保存 ✓'); }
+function applySaved(data) { if (!Array.isArray(data)) return; data.slice(0, levels.length).forEach((item, i) => Object.assign(custom[i], item)); renderCustomizer(); }
+function renderCustomizer() {
+  const root = document.querySelector('#customizer'); if (!root) return; root.innerHTML = '';
+  custom.forEach((item, i) => {
+    const card = document.createElement('div'); card.className = 'custom-card';
+    card.innerHTML = `<strong>等级 ${i + 1}</strong><div class="preview" style="background-color:${levels[i].color};${item.image ? `background-image:url('${item.image}')` : ''}"></div><label>照片<input type="file" accept="image/*" data-image="${i}"></label><label>音效<input type="file" accept="audio/*" data-audio="${i}"></label>`;
+    root.appendChild(card);
+  });
+  root.querySelectorAll('[data-image]').forEach(input => input.addEventListener('change', e => readFile(e.target.files[0], file => { const i = +e.target.dataset.image; custom[i].image = file.data; custom[i].imageName = file.name; persist(); renderCustomizer(); })));
+  root.querySelectorAll('[data-audio]').forEach(input => input.addEventListener('change', e => readFile(e.target.files[0], file => { const i = +e.target.dataset.audio; custom[i].audio = file.data; custom[i].audioName = file.name; audioCache.delete(i); persist(); renderCustomizer(); })));
+}
+function readFile(file, done) { if (!file) return; const reader = new FileReader(); reader.onload = () => done({ data: reader.result, name: file.name }); reader.readAsDataURL(file); }
+function playCustomSound(level) { if (!custom[level].audio) return; let audio = audioCache.get(level); if (!audio) { audio = new Audio(custom[level].audio); audio.volume = .6; audioCache.set(level, audio); } audio.currentTime = 0; audio.play().catch(() => {}); }
+function setupCustomizer() {
+  try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (saved) applySaved(saved); } catch (_) {}
+  renderCustomizer();
+  document.querySelector('#save-preset').onclick = () => { persist(); const blob = new Blob([JSON.stringify(custom)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ballup-preset.json'; a.click(); URL.revokeObjectURL(a.href); setStatus('预设已下载 ✓'); };
+  document.querySelector('#load-preset').onclick = () => document.querySelector('#preset-file').click();
+  document.querySelector('#preset-file').onchange = e => readFile(e.target.files[0], file => { try { applySaved(JSON.parse(atob(file.data.split(',')[1]))); persist(); setStatus('预设已加载 ✓'); } catch (_) { setStatus('预设文件无法读取'); } });
+  document.querySelector('#reset-preset').onclick = () => { custom.forEach(x => Object.assign(x, { image: '', audio: '', imageName: '', audioName: '' })); persist(); renderCustomizer(); };
+}
 const engine = Engine.create({ gravity: { x: 0, y: 1.05 } });
 engine.positionIterations = 8; engine.velocityIterations = 6; engine.constraintIterations = 4;
 const world = engine.world;
@@ -57,7 +83,7 @@ Events.on(engine, 'collisionStart', event => {
     World.remove(world, a); World.remove(world, b); balls = balls.filter(x => x.body !== a && x.body !== b);
     const body = Bodies.circle(x, y, levels[level].r, { restitution: 0.18, friction: 0.48, frictionStatic: 0.75, density: 0.0026, label: 'ball' });
     body.game = { level, born: performance.now() }; balls.push({ body, level }); World.add(world, body);
-    score += (level + 1) * 10; scoreEl.textContent = score;
+    score += (level + 1) * 10; scoreEl.textContent = score; playCustomSound(level);
     setTimeout(() => { mergeLock = false; }, 40); break;
   }
 });
@@ -71,9 +97,10 @@ function update(now) {
 function drawBall(body, level, alpha = 1) {
   const spec = levels[level], { x, y } = body.position, r = spec.r;
   ctx.save(); ctx.globalAlpha = alpha; ctx.shadowColor = spec.glow; ctx.shadowBlur = 18;
-  const gradient = ctx.createRadialGradient(x - r * .32, y - r * .38, 2, x, y, r);
-  gradient.addColorStop(0, '#ffffff'); gradient.addColorStop(.17, spec.color); gradient.addColorStop(1, spec.color + 'c7');
-  ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+  if (custom[level].image) { const image = new Image(); image.src = custom[level].image; image.onload = () => draw(); ctx.drawImage(image, x - r, y - r, r * 2, r * 2); }
+  else { const gradient = ctx.createRadialGradient(x - r * .32, y - r * .38, 2, x, y, r); gradient.addColorStop(0, '#ffffff'); gradient.addColorStop(.17, spec.color); gradient.addColorStop(1, spec.color + 'c7'); ctx.fillStyle = gradient; ctx.fill(); }
+  ctx.shadowBlur = 0;
   ctx.strokeStyle = '#ffffff55'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
 }
 function draw() {
@@ -85,4 +112,4 @@ function draw() {
   if (current) { drawBall({ position: { x: current.x, y: current.y } }, current.level, .92); ctx.strokeStyle = '#ffffff33'; ctx.beginPath(); ctx.moveTo(current.x, 78); ctx.lineTo(current.x, current.y - current.r - 7); ctx.stroke(); }
 }
 function loop(now) { update(now); draw(); requestAnimationFrame(loop); }
-reset(); requestAnimationFrame(loop);
+setupCustomizer(); reset(); requestAnimationFrame(loop);

@@ -21,6 +21,13 @@
         <div id="game-over" class="game-over hidden"><h2>游戏结束</h2><p>球堆超过了危险线</p><button id="restart-overlay">再来一局</button></div>
       </section>
       <p class="legend"><span class="dot"></span>危险线　 <span class="key">鼠标 / 触摸</span> 拖拽投放</p>
+      <section class="creator-panel">
+        <div class="panel-heading"><div><p class="eyebrow">MY BALLS</p><h2>DIY 球球实验室</h2></div><span id="save-status">设置会自动保存在本机</span></div>
+        <p class="panel-copy">给每个等级放一张照片和一段声音。照片与音效只保存在当前浏览器中，不会上传。</p>
+        <div id="customizer" class="customizer"></div>
+        <div class="preset-actions"><button id="save-preset">保存当前预设</button><button id="load-preset" class="secondary">加载预设</button><button id="reset-preset" class="ghost">恢复默认</button></div>
+        <input id="preset-file" type="file" accept="application/json" hidden />
+      </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
     <script src="game.js"></script>
