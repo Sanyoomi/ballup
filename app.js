@@ -12,6 +12,7 @@
   const skinConfig=window.MemeSkins||{levels:[],sources:{}};
   const customSkinKey='planet-merge-custom-skins-v1';let storedSkins={};
   try{storedSkins=JSON.parse(localStorage.getItem(customSkinKey)||'{}')||{};}catch{storedSkins={};}
+  function persistSkins(){try{localStorage.setItem(customSkinKey,JSON.stringify(storedSkins));return true;}catch{$('skin-feedback').textContent='图片已应用，但浏览器存储空间不足，请减少已保存图片后重试。';return false;}}
   const textures=new Array(10), originalNames=planets.map(p=>p.name), customVersions=new Array(10).fill(0);
   const stageNames=['刚破壳','乖乖球','傻乐球','干饭球','发呆球','爆哭球','逐渐离谱','开始膨胀','小球得志','究极大球'];
   stageNames.forEach((name,i)=>planets[i].name=name);
@@ -118,7 +119,7 @@
     const caption=document.createElement('span');caption.textContent=`${String(i+1).padStart(2,'0')} · 换图`;label.append(preview,caption);
     const input=document.createElement('input');input.id=`skin-${i}`;input.type='file';input.accept='image/png,image/jpeg,image/webp';input.className='sr-only';input.setAttribute('aria-label',`替换第${i+1}级图片`);
     const name=document.createElement('input');name.type='text';name.value=planets[i].name;name.maxLength=10;name.className='skin-name';name.setAttribute('aria-label',`第${i+1}级名称`);
-    name.addEventListener('change',()=>{planets[i].name=name.value.trim()||(stageNames[i]||originalNames[i]);name.value=planets[i].name;if(storedSkins[i]){storedSkins[i].name=planets[i].name;try{localStorage.setItem(customSkinKey,JSON.stringify(storedSkins));}catch{}}repaintThumbs();});
+    name.addEventListener('change',()=>{planets[i].name=name.value.trim()||(stageNames[i]||originalNames[i]);name.value=planets[i].name;if(storedSkins[i]){storedSkins[i].name=planets[i].name;persistSkins();}repaintThumbs();});
     input.addEventListener('change',async()=>{if(input.files[0])await importSkin(i,input.files[0]);input.value='';});
     item.append(label,input,name);$('skin-slots').append(item);editorItems.push({preview,name});
   }
@@ -129,10 +130,10 @@
     try{
       const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=url;});
       if(image.naturalWidth*image.naturalHeight>80000000)throw new Error('图片尺寸过大');
-      const small=document.createElement('canvas');small.width=512;small.height=512;const c=small.getContext('2d'),side=Math.min(image.naturalWidth,image.naturalHeight);
-      c.drawImage(image,(image.naturalWidth-side)/2,(image.naturalHeight-side)/2,side,side,0,0,512,512);
-      const prepared=await new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.src=small.toDataURL('image/webp',.9);});
-      if(customVersions[i]!==version)return false;textures[i]={image:prepared};storedSkins[i]={src:prepared.src,name:planets[i].name};try{localStorage.setItem(customSkinKey,JSON.stringify(storedSkins));}catch{}repaintThumbs();repaintEditor();$('skin-feedback').textContent=`第 ${i+1} 级已替换：${file.name}`;return true;
+      const small=document.createElement('canvas');small.width=256;small.height=256;const c=small.getContext('2d'),side=Math.min(image.naturalWidth,image.naturalHeight);
+      c.drawImage(image,(image.naturalWidth-side)/2,(image.naturalHeight-side)/2,side,side,0,0,256,256);
+      const prepared=await new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.src=small.toDataURL('image/webp',.78);});
+      if(customVersions[i]!==version)return false;textures[i]={image:prepared};storedSkins[i]={src:prepared.src,name:planets[i].name};persistSkins();repaintThumbs();repaintEditor();$('skin-feedback').textContent=`第 ${i + 1} 级已替换并保存：${file.name}`;return true;
     }catch{$('skin-feedback').textContent='这张图片无法读取，请换一张。';return false;}finally{URL.revokeObjectURL(url);}
   }
   function loadStoredSkins(){return Promise.all(Object.entries(storedSkins).map(([key,data])=>new Promise(resolve=>{const i=Number(key);if(!data?.src||!Number.isInteger(i)||i<0||i>=planets.length){resolve();return;}const image=new Image();image.onload=()=>{textures[i]={image};if(data.name)planets[i].name=data.name;resolve();};image.onerror=()=>resolve();image.src=data.src;}))).then(()=>{repaintThumbs();repaintEditor();});}
