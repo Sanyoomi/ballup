@@ -146,6 +146,7 @@
   $('preview-merge-audio').addEventListener('click',()=>{if(!playCustomMergeAudio())soundPlayer.preview(game.current);});
   $('reset-merge-audio').addEventListener('click',()=>{customMergeAudioData='';customMergeAudio=null;try{localStorage.removeItem(customAudioKey);}catch{}updateCustomAudioUI();$('skin-feedback').textContent='已恢复默认合成音效。';});
   $('edit-skins').addEventListener('click',()=>{activePointer=null;editorWasPaused=game.paused;game.paused=true;soundPlayer.stopAll();repaintEditor();editor.showModal();});
+  $('edit-audio').addEventListener('click',()=>{activePointer=null;editorWasPaused=game.paused;game.paused=true;soundPlayer.stopAll();repaintEditor();editor.showModal();setTimeout(()=>$('custom-merge-audio').focus(),50);});
   $('close-skins').addEventListener('click',()=>editor.close());$('done-skins').addEventListener('click',()=>editor.close());
   editor.addEventListener('close',()=>{game.paused=editorWasPaused;lastTime=performance.now();accumulator=0;});
   $('reset-skins').addEventListener('click',()=>{customVersions.forEach((v,i)=>{customVersions[i]++;textures[i]=null;planets[i].name=stageNames[i]||originalNames[i];});storedSkins={};try{localStorage.removeItem(customSkinKey);}catch{}loadDefaultSkins();$('skin-feedback').textContent='已恢复默认球球成长图片。';});
