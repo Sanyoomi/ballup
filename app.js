@@ -89,7 +89,7 @@
   }
   function planet(c,level,x,y,r,angle=0,alpha=1,time=0) {
     const p=planets[level];
-    if(comedyTheme){comicPlanet(c,level,x,y,r,angle,alpha);return;}
+    if(comedyTheme&&!textures[level]){comicPlanet(c,level,x,y,r,angle,alpha);return;}
     c.save();c.globalAlpha=alpha;c.translate(x,y);
     c.fillStyle='#52644413';c.beginPath();c.ellipse(1,r*.89,r*.8,r*.16,0,0,Math.PI*2);c.fill();
     c.rotate(angle);
