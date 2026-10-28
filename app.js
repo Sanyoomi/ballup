@@ -17,10 +17,12 @@
   function persistSkins(){try{localStorage.setItem(customSkinKey,JSON.stringify(storedSkins));return true;}catch{$('skin-feedback').textContent='图片已应用，但浏览器存储空间不足，请减少已保存图片后重试。';return false;}}
   function playCustomMergeAudio(){if(!customMergeAudioData)return false;try{customMergeAudio=customMergeAudio||new Audio(customMergeAudioData);customMergeAudio.currentTime=0;customMergeAudio.volume=.72;customMergeAudio.play().catch(()=>{});return true;}catch{return false;}}
   function updateCustomAudioUI(){const status=$('audio-custom-status');if(status)status.textContent=customMergeAudioData?'已保存自定义合成音效':'使用默认音效';}
+  function speakComic(level){if(!comedyTheme||!('speechSynthesis' in window))return;const lines=['这球有点离谱','没办法，球进了','笑死，继续碰','手感来了','这次真的会进','球场见','别急，还有机会','这波不亏','太会弹了','压轴登场'];const utterance=new SpeechSynthesisUtterance(lines[level]||lines[0]);utterance.lang='zh-CN';utterance.rate=1.12;utterance.pitch=1.25;utterance.volume=.55;window.speechSynthesis.cancel();window.speechSynthesis.speak(utterance);}
   const textures=new Array(10), originalNames=planets.map(p=>p.name), customVersions=new Array(10).fill(0);
   const stageNames=['刚破壳','乖乖球','傻乐球','干饭球','发呆球','爆哭球','逐渐离谱','开始膨胀','小球得志','究极大球'];
   stageNames.forEach((name,i)=>planets[i].name=name);
-  let best=0,sound=true,particles=[],specialEffects=[],floaters=[],toastTimer,mode='pause',previousFocus=null,playMode='classic',pendingMode=null,dailyMerges=0,dailyScore=0,dailyDiscover=0,lastDiscoveryCount=0;
+  let best=0,sound=true,particles=[],specialEffects=[],floaters=[],toastTimer,mode='pause',previousFocus=null,playMode='classic',pendingMode=null,dailyMerges=0,dailyScore=0,dailyDiscover=0,lastDiscoveryCount=0,comedyTheme=false;
+  try{comedyTheme=localStorage.getItem('planet-merge-comedy-theme')==='true';}catch{}
   try { const savedDaily=JSON.parse(localStorage.getItem('planet-merge-daily')||'{}'); const today=new Date().toISOString().slice(0,10); if(savedDaily.date===today){dailyMerges=savedDaily.merges||0;dailyScore=savedDaily.score||0;dailyDiscover=savedDaily.discover||0;} else localStorage.setItem('planet-merge-daily',JSON.stringify({date:today,merges:0,score:0,discover:0})); } catch{}
   try {best=Number(localStorage.getItem('planet-merge-best'))||0;const saved=localStorage.getItem('planet-merge-sound');if(saved!==null)sound=saved==='true';}catch{}
   const soundPlayer=new MemeAudio.SoundEngine({assets:window.MemeSounds,enabled:sound,onUnavailable:()=>toast('大笑音效暂不可用，已改用弹跳音效')});
@@ -46,7 +48,8 @@
       floaters.push({x:e.x,y:e.y,text:'+'+e.points,life:1,max:1});
       $('score').textContent=game.score.toLocaleString();saveBest();updateDiscovery();
       const reactions=['刚出生就开始碰瓷','乖巧，但只有一点','笑得有点太早了','先干饭，再说别的','大脑正在加载中…','哭了，但还是要长大','这表情逐渐不对劲','已经开始膨胀了','小球得志，拿捏了','究极大球球，登场！'];
-      $('combo').textContent=e.combo>1?`${e.combo} 连合成 · 越来越离谱！`:reactions[e.level];
+      const comicReactions=['碰一下，弹得很专业','这球没有剧本','球：我还能长','看似普通，实则离谱','笑容逐渐失控','这波弹性拉满','裁判看不懂了','球场气氛组上线','已经开始膨胀','压轴球登场'];
+      $('combo').textContent=e.combo>1?`${e.combo} 连合成 · 越来越离谱！`:(comedyTheme?comicReactions[e.level]:reactions[e.level]);speakComic(e.level);
       $('announcer').textContent=`合成${planets[e.level].name}，获得${e.points}分，总分${game.score}分`;
       if(playMode==='task'&&game.merges>=5&&game.score>=500){game.ended=true;recordLeaderboard();toast('今日任务完成！');openModal('over');}
     },
@@ -60,9 +63,13 @@
   function chooseMode(next){if(next===playMode)return;pendingMode=next;openModal('mode-switch');}
   function confirmModeSwitch(){if(!pendingMode)return;playMode=pendingMode;game.mode=playMode;pendingMode=null;document.querySelectorAll('.mode-button').forEach(button=>button.classList.toggle('active',button.dataset.mode===playMode));const labels={timed:'60秒挑战',free:'轻松模式',endless:'无尽模式',task:'任务模式',challenge:'挑战模式',classic:'经典模式'};toast(`已切换到${labels[playMode]||'经典模式'}`);restart();}
   document.querySelectorAll('.mode-button').forEach(button=>button.addEventListener('click',()=>chooseMode(button.dataset.mode)));
+  $('comedy-theme').addEventListener('click',()=>{comedyTheme=!comedyTheme;try{localStorage.setItem('planet-merge-comedy-theme',String(comedyTheme));}catch{}$('comedy-theme').textContent=comedyTheme?'关闭爆笑风':'原创爆笑风';repaintThumbs();repaintEditor();updateNext();toast(comedyTheme?'原创爆笑球球已启用':'已恢复普通球球外观');});
+  if(comedyTheme)$('comedy-theme').textContent='关闭爆笑风';
   // Draw planets with surface markings, faces and light; rotation follows the body.
+  function comicPlanet(c,level,x,y,r,angle=0,alpha=1){const colors=['#ef8354','#f6bd60','#f7e27d','#8fc0a9','#68a691','#7aa7d9','#8e7dbe','#d58b9c','#e4a853','#6e7783'];const faces=[['•','•','⌣'],['•','•','◡'],['◉','◉','ᴗ'],['•','•','o'],['>','<','ω'],['◕','◕','▽'],['•','•','︿'],['★','★','ᴗ'],['◉','•','—'],['•','•','⌣']];c.save();c.globalAlpha=alpha;c.translate(x,y);c.rotate(angle);const g=c.createRadialGradient(-r*.35,-r*.4,2,0,0,r);g.addColorStop(0,'#fff9d8');g.addColorStop(.25,colors[level]);g.addColorStop(1,'#6d594e');c.fillStyle=g;c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.fill();c.strokeStyle='#604c3f88';c.lineWidth=Math.max(1,r*.035);c.stroke();c.strokeStyle='#fff8';c.lineWidth=Math.max(2,r*.07);c.beginPath();c.arc(0,0,r*.78,-.35,Math.PI+.35);c.stroke();c.fillStyle='#fffdf0';c.font=`900 ${Math.max(8,r*.32)}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(faces[level][0],-r*.22,-r*.07);c.fillText(faces[level][1],r*.22,-r*.07);c.font=`900 ${Math.max(9,r*.34)}px sans-serif`;c.fillText(faces[level][2],0,r*.19);if(level%3===0){c.fillStyle='#fffdf0';c.font=`900 ${Math.max(8,r*.22)}px sans-serif`;c.fillText('GO!',0,-r*.58);}c.restore();}
   function planet(c,level,x,y,r,angle=0,alpha=1,time=0) {
     const p=planets[level];
+    if(comedyTheme){comicPlanet(c,level,x,y,r,angle,alpha);return;}
     c.save();c.globalAlpha=alpha;c.translate(x,y);
     c.fillStyle='#52644413';c.beginPath();c.ellipse(1,r*.89,r*.8,r*.16,0,0,Math.PI*2);c.fill();
     c.rotate(angle);
