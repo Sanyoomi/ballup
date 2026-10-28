@@ -38,3 +38,4 @@ main{max-width:1000px;padding-inline:24px}.play-layout{grid-template-columns:min
 .audio-custom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:15px 0;padding:12px;border:1px solid #b8ae98;border-radius:10px;background:#d8d0be}.audio-custom>div{display:flex;flex:1;min-width:150px;flex-direction:column;gap:4px}.audio-custom strong{font-size:11px}.audio-custom span{font-size:9px;color:#6b6b5c}.audio-custom .small-pill{padding:7px 10px}.audio-custom .text-button{margin:0;padding:7px;font-size:10px}
 @media(max-width:600px){.audio-custom{align-items:stretch}.audio-custom>div{flex-basis:100%}.audio-custom .small-pill,.audio-custom .text-button{flex:1;text-align:center}}
 .audio-custom select{border:1px solid #b6ac94;border-radius:7px;padding:7px 8px;background:#ece6d9;color:#4f5146;font-size:10px}
+.audio-effect-help{flex-basis:100%;font-size:9px;color:#765f3d;padding-top:3px}.audio-effect-help.is-muted{color:#9a8b73}
