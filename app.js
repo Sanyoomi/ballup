@@ -11,8 +11,12 @@
   const boardColors=Object.fromEntries(['board','board-line','board-floor','board-floor-line','board-note','board-aim'].map(name=>[name,style.getPropertyValue('--'+name).trim()]));
   const skinConfig=window.MemeSkins||{levels:[],sources:{}};
   const customSkinKey='planet-merge-custom-skins-v1';let storedSkins={};
+  const customAudioKey='planet-merge-custom-merge-audio-v1';let customMergeAudioData='';let customMergeAudio=null;
+  try{customMergeAudioData=localStorage.getItem(customAudioKey)||'';if(customMergeAudioData)customMergeAudio=new Audio(customMergeAudioData);}catch{}
   try{storedSkins=JSON.parse(localStorage.getItem(customSkinKey)||'{}')||{};}catch{storedSkins={};}
   function persistSkins(){try{localStorage.setItem(customSkinKey,JSON.stringify(storedSkins));return true;}catch{$('skin-feedback').textContent='图片已应用，但浏览器存储空间不足，请减少已保存图片后重试。';return false;}}
+  function playCustomMergeAudio(){if(!customMergeAudioData)return false;try{customMergeAudio=customMergeAudio||new Audio(customMergeAudioData);customMergeAudio.currentTime=0;customMergeAudio.volume=.72;customMergeAudio.play().catch(()=>{});return true;}catch{return false;}}
+  function updateCustomAudioUI(){const status=$('audio-custom-status');if(status)status.textContent=customMergeAudioData?'已保存自定义合成音效':'使用默认音效';}
   const textures=new Array(10), originalNames=planets.map(p=>p.name), customVersions=new Array(10).fill(0);
   const stageNames=['刚破壳','乖乖球','傻乐球','干饭球','发呆球','爆哭球','逐渐离谱','开始膨胀','小球得志','究极大球'];
   stageNames.forEach((name,i)=>planets[i].name=name);
@@ -35,7 +39,7 @@
   async function watchRewarded(){const button=$('watch-ad');button.disabled=true;$('ad-status').textContent='奖励广告播放中 · 请稍候';try{if(window.BallUpAds?.showRewarded)await window.BallUpAds.showRewarded();else await new Promise(resolve=>setTimeout(resolve,2200));const types=Object.keys(specialMeta),target=types[Math.floor(Math.random()*types.length)];toolInventory[target]=(toolInventory[target]||0)+1;saveInventory();renderTools();$('ad-status').textContent=`获得 1 个${specialMeta[target][1]}，可叠加保存`;}catch{$('ad-status').textContent='广告未完成，道具没有获得';}finally{button.disabled=false;}}
   const game=new Game({
     onMerge(e){
-      soundPlayer.merge(e.level);
+      if(!playCustomMergeAudio())soundPlayer.merge(e.level);
       dailyMerges++;dailyScore+=e.points;if(game.discovered.size>lastDiscoveryCount){dailyDiscover++;lastDiscoveryCount=game.discovered.size;}saveDaily();
       const color=planets[e.level].color;
       for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,s=30+Math.random()*90;particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.7,max:.7,size:2+Math.random()*3,color});}
@@ -138,6 +142,9 @@
   }
   function loadStoredSkins(){return Promise.all(Object.entries(storedSkins).map(([key,data])=>new Promise(resolve=>{const i=Number(key);if(!data?.src||!Number.isInteger(i)||i<0||i>=planets.length){resolve();return;}const image=new Image();image.onload=()=>{textures[i]={image};if(data.name)planets[i].name=data.name;resolve();};image.onerror=()=>resolve();image.src=data.src;}))).then(()=>{repaintThumbs();repaintEditor();});}
   $('skin-batch').addEventListener('change',async e=>{const files=Array.from(e.target.files).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).slice(0,10);let count=0;for(let i=0;i<files.length;i++)if(await importSkin(i,files[i]))count++;e.target.value='';$('skin-feedback').textContent=`已替换 ${count} 个等级，顺序按文件名排列。`;});
+  $('custom-merge-audio').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('audio/')||file.size>3*1024*1024){$('skin-feedback').textContent='请选择不超过 3 MB 的音频文件。';e.target.value='';return;}const reader=new FileReader();reader.onload=()=>{try{customMergeAudioData=reader.result;localStorage.setItem(customAudioKey,customMergeAudioData);customMergeAudio=new Audio(customMergeAudioData);updateCustomAudioUI();$('skin-feedback').textContent=`合成音效已保存：${file.name}`;}catch{$('skin-feedback').textContent='音效保存失败，请换一个较小的文件。';}};reader.readAsDataURL(file);e.target.value='';});
+  $('preview-merge-audio').addEventListener('click',()=>{if(!playCustomMergeAudio())soundPlayer.preview(game.current);});
+  $('reset-merge-audio').addEventListener('click',()=>{customMergeAudioData='';customMergeAudio=null;try{localStorage.removeItem(customAudioKey);}catch{}updateCustomAudioUI();$('skin-feedback').textContent='已恢复默认合成音效。';});
   $('edit-skins').addEventListener('click',()=>{activePointer=null;editorWasPaused=game.paused;game.paused=true;soundPlayer.stopAll();repaintEditor();editor.showModal();});
   $('close-skins').addEventListener('click',()=>editor.close());$('done-skins').addEventListener('click',()=>editor.close());
   editor.addEventListener('close',()=>{game.paused=editorWasPaused;lastTime=performance.now();accumulator=0;});
@@ -232,5 +239,5 @@
     const timer=$('mode-timer');if(timer)timer.textContent=playMode==='timed'?`${Math.ceil(game.timeLeft/1000)}s`:'∞';
     requestAnimationFrame(frame);
   }
-  updateNext();updateDiscovery();updateSound();updateDaily();renderLeaderboard();loadDefaultSkins().then(loadStoredSkins);requestAnimationFrame(frame);
+  updateNext();updateDiscovery();updateSound();updateDaily();updateCustomAudioUI();renderLeaderboard();loadDefaultSkins().then(loadStoredSkins);requestAnimationFrame(frame);
 })();
